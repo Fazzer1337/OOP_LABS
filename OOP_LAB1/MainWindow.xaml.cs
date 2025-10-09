@@ -13,45 +13,95 @@ namespace OOP_LAB1
     public partial class MainWindow : Window
     {
         private const string DataFileName = "tasks.json";
+        private const string CategoriesFileName = "categories.json";
 
         public ObservableCollection<TaskItem> Tasks { get; set; } = new ObservableCollection<TaskItem>();
-        public ObservableCollection<string> Categories { get; set; } = new ObservableCollection<string> { "Все", "Работа", "Учёба", "Дом" };
+        public ObservableCollection<string> Categories { get; set; } = new ObservableCollection<string>();
 
         private ICollectionView TasksView;
 
         public MainWindow()
         {
             InitializeComponent();
-            LoadTasks();
 
-            // Привязки
+            // Загрузка категорий ДО назначения ItemsSource
+            LoadCategories();
+            if (Categories.Count == 0) // Если файл пуст или не существует, добавим дефолтные
+            {
+                Categories.Add("Все");
+                Categories.Add("Работа");
+                Categories.Add("Учёба");
+                Categories.Add("Дом");
+                SaveCategories();
+            }
+
+            // Привязка источников данных
             TasksList.ItemsSource = Tasks;
             CategoriesList.ItemsSource = Categories;
             CategoriesList.SelectedIndex = 0;
 
-            // Создаем view для фильтра
+            FilterBox.ItemsSource = Categories;
+            FilterBox.SelectedIndex = 0;
+
+            // Создаем view для фильтра задач
             TasksView = CollectionViewSource.GetDefaultView(Tasks);
             TasksView.Filter = TasksFilter;
 
             // Обработчики UI
             SearchBox.TextChanged += SearchBox_TextChanged;
             FilterBox.SelectionChanged += FilterBox_SelectionChanged;
-
-            FilterBox.ItemsSource = Categories;
-            FilterBox.SelectedIndex = 0;
-
             CategoriesList.SelectionChanged += CategoriesList_SelectionChanged;
+
+            LoadTasks();
+        }
+
+        private void AddCategory_Click(object sender, RoutedEventArgs e)
+        {
+            var input = Microsoft.VisualBasic.Interaction.InputBox("Введите название новой категории:", "Новая категория", "");
+            if (!string.IsNullOrWhiteSpace(input) && !Categories.Contains(input))
+            {
+                Categories.Add(input);
+                SaveCategories();
+
+                FilterBox.SelectedItem = input;
+                CategoriesList.SelectedItem = input;
+                TasksView.Refresh();
+            }
+        }
+
+        private void DeleteCategory_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new CategoryDeleteWindow(Categories) { Owner = this };
+            if (dlg.ShowDialog() == true)
+            {
+                string category = dlg.SelectedCategory;
+                if (!string.IsNullOrEmpty(category) && Categories.Contains(category))
+                {
+                    Categories.Remove(category);
+                    SaveCategories();
+
+                    if (Categories.Count > 0)
+                    {
+                        FilterBox.SelectedItem = Categories[0];
+                        CategoriesList.SelectedItem = Categories[0];
+                    }
+                    TasksView.Refresh();
+                }
+            }
         }
 
         private bool TasksFilter(object item)
         {
             if (item is TaskItem task)
             {
-                bool matchesCategory = CategoriesList.SelectedItem == null || CategoriesList.SelectedItem.ToString() == "Все" || task.Category == CategoriesList.SelectedItem.ToString();
-                bool matchesSearch =
-    string.IsNullOrWhiteSpace(SearchBox.Text)
-    || (task.Title != null && task.Title.ToLower().Contains(SearchBox.Text.ToLower()))
-    || (task.Description != null && task.Description.ToLower().Contains(SearchBox.Text.ToLower()));
+                bool matchesCategory = CategoriesList.SelectedItem == null
+                    || CategoriesList.SelectedItem.ToString() == "Все"
+                    || task.Category == CategoriesList.SelectedItem.ToString();
+
+                bool matchesSearch = string.IsNullOrWhiteSpace(SearchBox.Text)
+                    || (task.Title != null && task.Title.ToLower().Contains(SearchBox.Text.ToLower()))
+                    || (task.Description != null && task.Description.ToLower().Contains(SearchBox.Text.ToLower()));
+
                 return matchesCategory && matchesSearch;
             }
             return false;
@@ -147,9 +197,46 @@ namespace OOP_LAB1
                 MessageBox.Show("Ошибка сохранения: " + ex.Message);
             }
         }
+
         private void TaskCompleted_Changed(object sender, RoutedEventArgs e)
         {
             SaveTasks();
+        }
+
+        private void SaveCategories()
+        {
+            try
+            {
+                var json = JsonSerializer.Serialize(Categories);
+                File.WriteAllText(CategoriesFileName, json);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Ошибка сохранения категорий: " + ex.Message);
+            }
+        }
+
+        private void LoadCategories()
+        {
+            try
+            {
+                if (File.Exists(CategoriesFileName))
+                {
+                    var loaded = JsonSerializer.Deserialize<ObservableCollection<string>>(File.ReadAllText(CategoriesFileName));
+                    if (loaded != null)
+                    {
+                        Categories.Clear();
+                        foreach (var cat in loaded)
+                        {
+                            Categories.Add(cat);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Ошибка загрузки категорий: " + ex.Message);
+            }
         }
 
         private void LoadTasks()
@@ -172,6 +259,5 @@ namespace OOP_LAB1
             {
             }
         }
-
     }
 }

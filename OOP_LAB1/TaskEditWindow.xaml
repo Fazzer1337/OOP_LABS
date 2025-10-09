@@ -5,15 +5,10 @@
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <!-- Название -->
             <RowDefinition Height="Auto"/>
-            <!-- Категория -->
             <RowDefinition Height="*"/>
-            <!-- Описание (заполняет пространство) -->
             <RowDefinition Height="Auto"/>
-            <!-- Снизу: галочка -->
             <RowDefinition Height="Auto"/>
-            <!-- Кнопки -->
         </Grid.RowDefinitions>
 
         <Label Content="Название:" />

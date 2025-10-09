@@ -17,7 +17,7 @@ namespace OOP_LAB1
             TitleTextBox.Text = Task.Title;
             DescriptionTextBox.Text = Task.Description;
             CategoryComboBox.ItemsSource = Categories;
-            CategoryComboBox.SelectedItem = Task.Category ?? Categories[0]; // установка категории
+            CategoryComboBox.SelectedItem = Task.Category ?? Categories[0]; // Установка категории
 
             HighPriorityCheckBox.IsChecked = Task.Priority == "Высокий";
         }
