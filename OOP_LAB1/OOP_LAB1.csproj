@@ -90,6 +90,8 @@
     <Compile Include="CategoryDeleteWindow.xaml.cs">
       <DependentUpon>CategoryDeleteWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="DateTimeToStringConverter.cs" />
+    <Compile Include="DueTimeOverdueConverter.cs" />
     <Compile Include="TaskItem.cs" />
     <Compile Include="TaskEditWindow.xaml.cs">
       <DependentUpon>TaskEditWindow.xaml</DependentUpon>

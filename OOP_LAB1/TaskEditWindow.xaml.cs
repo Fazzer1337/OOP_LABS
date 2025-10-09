@@ -1,4 +1,5 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.Collections.ObjectModel;
 using System.Windows;
 
 namespace OOP_LAB1
@@ -18,8 +19,19 @@ namespace OOP_LAB1
             DescriptionTextBox.Text = Task.Description;
             CategoryComboBox.ItemsSource = Categories;
             CategoryComboBox.SelectedItem = Task.Category ?? Categories[0]; // Установка категории
-
             HighPriorityCheckBox.IsChecked = Task.Priority == "Высокий";
+
+            // Инициализируем поля даты и времени
+            if (Task.DueTime != DateTime.MinValue)
+            {
+                DueDatePicker.SelectedDate = Task.DueTime.Date;
+                DueTimeTextBox.Text = Task.DueTime.ToString("HH:mm");
+            }
+            else
+            {
+                DueDatePicker.SelectedDate = null;
+                DueTimeTextBox.Text = "";
+            }
         }
 
         private void Save_Click(object sender, RoutedEventArgs e)
@@ -29,6 +41,21 @@ namespace OOP_LAB1
                 MessageBox.Show("Введите название задачи.", "Ошибка");
                 return;
             }
+            if (DueDatePicker.SelectedDate == null || string.IsNullOrWhiteSpace(DueTimeTextBox.Text))
+            {
+                MessageBox.Show("Укажите дату и время выполнения задачи!", "Ошибка");
+                return;
+            }
+            if (TimeSpan.TryParse(DueTimeTextBox.Text, out var time))
+            {
+                Task.DueTime = DueDatePicker.SelectedDate.Value.Date + time;
+            }
+            else
+            {
+                MessageBox.Show("Формат времени неверный! Используйте HH:mm");
+                return;
+            }
+
             Task.Description = DescriptionTextBox.Text;
             Task.Title = TitleTextBox.Text;
             Task.Category = CategoryComboBox.SelectedItem?.ToString() ?? Categories[0];

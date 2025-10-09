@@ -3,33 +3,48 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:local="clr-namespace:OOP_LAB1"
         mc:Ignorable="d"
         Title="To Do List" Height="600" Width="900">
+
+    <Window.Resources>
+        <local:DateTimeToStringConverter x:Key="DateTimeToStringConverter"/>
+        <local:DueTimeOverdueConverter x:Key="DueTimeOverdueConverter"/>
+    </Window.Resources>
+
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="180"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
+
+        <!-- Левая панель: Категории -->
         <StackPanel Grid.Column="0" Background="#f3f5fa" Margin="10">
             <TextBlock Text="Категории" FontWeight="Bold" Margin="0 0 0 10"/>
             <ListBox x:Name="CategoriesList" Height="280"/>
             <Button Content="Добавить категорию" Margin="0 10 0 0" Height="30" Click="AddCategory_Click"/>
             <Button Content="Удалить категорию" Margin="0 10 0 0" Height="30" Click="DeleteCategory_Click"/>
         </StackPanel>
+
+        <!-- Центральная зона: задачи -->
         <Grid Grid.Column="1" Margin="16">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
+
+            <!-- Верхняя панель фильтров и добавления -->
             <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="0 0 0 16">
-                <TextBox x:Name="SearchBox" Width="180" Height="28" Margin="0 0 12 0" 
+                <TextBox x:Name="SearchBox" Width="180" Height="28" Margin="0 0 12 0"
                          VerticalAlignment="Center" ToolTip="Поиск..."/>
                 <ComboBox x:Name="FilterBox" Width="120" Height="28" Margin="0 0 12 0"
                           VerticalAlignment="Center"/>
                 <Button Content="Добавить задачу" Width="120" Height="28" VerticalAlignment="Center" Click="AddTask_Click"/>
             </StackPanel>
+
+            <!-- Список задач -->
             <ListView x:Name="TasksList" Grid.Row="2" Margin="0 12 0 0">
                 <ListView.ItemTemplate>
                     <DataTemplate>
@@ -40,21 +55,37 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
+
                                 <CheckBox IsChecked="{Binding IsCompleted}" 
-          VerticalAlignment="Top" Margin="0 2 0 0" 
-          Checked="TaskCompleted_Changed" Unchecked="TaskCompleted_Changed"/>
+                                          VerticalAlignment="Top" Margin="0 2 0 0" 
+                                          Checked="TaskCompleted_Changed" Unchecked="TaskCompleted_Changed"/>
+
                                 <StackPanel Grid.Column="1" Margin="8 0 0 0">
                                     <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="Bold"/>
                                     <TextBlock Text="{Binding Description}" FontSize="12" TextWrapping="Wrap" Opacity="0.7"/>
                                     <WrapPanel Margin="0 6 0 0">
                                         <TextBlock Text="Приоритет: " FontWeight="Bold"/>
                                         <TextBlock Text="{Binding Priority}"/>
-                                        <TextBlock Text="  |  "/>
+                                        <TextBlock Text="  |  " />
                                         <TextBlock Text="{Binding Category}"/>
                                         <TextBlock Text="  |  "/>
-                                        <TextBlock Text="{Binding DueTime, StringFormat='до {0:HH:mm dd.MM}'}"/>
+                                        <TextBlock
+    Text="{Binding DueTime, Converter={StaticResource DateTimeToStringConverter}}">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Converter={StaticResource DueTimeOverdueConverter}}" Value="True">
+                                                            <Setter Property="Foreground" Value="Red"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+
+
                                     </WrapPanel>
                                 </StackPanel>
+
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top">
                                     <Button Content="Редактировать" Tag="{Binding}" Click="EditTask_Click" Margin="0 0 4 0" Height="26"/>
                                     <Button Content="Удалить" Tag="{Binding}" Click="DeleteTask_Click" Height="26"/>

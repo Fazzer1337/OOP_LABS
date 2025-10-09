@@ -26,7 +26,7 @@ namespace OOP_LAB1
 
             // Загрузка категорий ДО назначения ItemsSource
             LoadCategories();
-            if (Categories.Count == 0) // Если файл пуст или не существует, добавим дефолтные
+            if (Categories.Count == 0)
             {
                 Categories.Add("Все");
                 Categories.Add("Работа");
@@ -35,19 +35,15 @@ namespace OOP_LAB1
                 SaveCategories();
             }
 
-            // Привязка источников данных
             TasksList.ItemsSource = Tasks;
             CategoriesList.ItemsSource = Categories;
             CategoriesList.SelectedIndex = 0;
-
             FilterBox.ItemsSource = Categories;
             FilterBox.SelectedIndex = 0;
 
-            // Создаем view для фильтра задач
             TasksView = CollectionViewSource.GetDefaultView(Tasks);
             TasksView.Filter = TasksFilter;
 
-            // Обработчики UI
             SearchBox.TextChanged += SearchBox_TextChanged;
             FilterBox.SelectionChanged += FilterBox_SelectionChanged;
             CategoriesList.SelectionChanged += CategoriesList_SelectionChanged;
@@ -62,7 +58,6 @@ namespace OOP_LAB1
             {
                 Categories.Add(input);
                 SaveCategories();
-
                 FilterBox.SelectedItem = input;
                 CategoriesList.SelectedItem = input;
                 TasksView.Refresh();
@@ -79,7 +74,6 @@ namespace OOP_LAB1
                 {
                     Categories.Remove(category);
                     SaveCategories();
-
                     if (Categories.Count > 0)
                     {
                         FilterBox.SelectedItem = Categories[0];
@@ -131,14 +125,14 @@ namespace OOP_LAB1
                 Description = "",
                 Category = Categories.Count > 0 ? Categories[0] : "Работа",
                 Priority = "Средний",
-                DueTime = DateTime.Now.AddHours(1),
+                DueTime = DateTime.MinValue, // Важно! Пользователь выберет нужную дату/время
                 IsCompleted = false,
             };
 
             var editWindow = new TaskEditWindow(newTask, Categories) { Owner = this };
             if (editWindow.ShowDialog() == true)
             {
-                Tasks.Add(newTask);
+                Tasks.Add(newTask); // После оконного диалога в newTask уже актуальная дата-время
                 SaveTasks();
                 TasksView.Refresh();
             }
