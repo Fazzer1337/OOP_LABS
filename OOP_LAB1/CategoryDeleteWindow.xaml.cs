@@ -32,5 +32,10 @@ namespace OOP_LAB1
         {
             DialogResult = false;
         }
+
+        private void CategoryComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+
+        }
     }
 }
