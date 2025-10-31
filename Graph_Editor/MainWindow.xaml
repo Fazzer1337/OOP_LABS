@@ -15,10 +15,10 @@
                 <MenuItem Header="Выход" Click="Exit_Click"/>
             </MenuItem>
             <MenuItem Header="Правка">
-                <!-- Добавьте команды редактирования -->
+                <!-- Добавить команды редактирования -->
             </MenuItem>
             <MenuItem Header="Вид">
-                <!-- Добавьте настройки отображения -->
+                <!-- Добавить настройки отображения -->
             </MenuItem>
             <MenuItem Header="Инструменты">
                 <!-- Добавьте дополнительные инструменты -->
@@ -35,7 +35,7 @@
             <Button Name="FreeDrawToolBtn" Content="Карандаш" Click="FreeDrawToolBtn_Click" />
         </ToolBar>
 
-        <!-- Цветовая палитра -->
+        <!-- Цветовая палитра(возможно изменить) -->
         <StackPanel x:Name="PalettePanel" DockPanel.Dock="Top" Orientation="Horizontal" Margin="5" Background="LightGray">
             <TextBlock Text="Выберите цвет:" VerticalAlignment="Center" Margin="5"/>
             <Button Background="Black" Width="25" Height="25" Margin="2" Click="ColorPick_Click"/>
