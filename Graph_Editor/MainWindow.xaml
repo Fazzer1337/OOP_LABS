@@ -11,6 +11,7 @@
                 <MenuItem Header="Новый" Click="NewProject_Click"/>
                 <MenuItem Header="Открыть" Click="OpenProject_Click"/>
                 <MenuItem Header="Сохранить" Click="SaveProject_Click"/>
+                <MenuItem Header="Сохранить как" Click="SaveAsProject_Click"/>
                 <Separator />
                 <MenuItem Header="Выход" Click="Exit_Click"/>
             </MenuItem>
@@ -35,13 +36,10 @@
             <Button Name="FreeDrawToolBtn" Content="Карандаш" Click="FreeDrawToolBtn_Click" />
         </ToolBar>
 
-        <!-- Цветовая палитра(возможно изменить) -->
+        <!-- Палитра цветов -->
         <StackPanel x:Name="PalettePanel" DockPanel.Dock="Top" Orientation="Horizontal" Margin="5" Background="LightGray">
             <TextBlock Text="Выберите цвет:" VerticalAlignment="Center" Margin="5"/>
             <Button Background="Black" Width="25" Height="25" Margin="2" Click="ColorPick_Click"/>
-            <Button Background="Red" Width="25" Height="25" Margin="2" Click="ColorPick_Click"/>
-            <Button Background="Green" Width="25" Height="25" Margin="2" Click="ColorPick_Click"/>
-            <Button Background="Blue" Width="25" Height="25" Margin="2" Click="ColorPick_Click"/>
             <Button Content="+" Width="25" Height="25" Margin="2" Click="AddColor_Click"/>
         </StackPanel>
 
