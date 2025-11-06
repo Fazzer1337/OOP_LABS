@@ -22,19 +22,14 @@
                 <!-- Добавить настройки отображения -->
             </MenuItem>
             <MenuItem Header="Инструменты">
-                <!-- Добавьте дополнительные инструменты -->
+                <MenuItem Header="Курсор" Click="CursorToolBtn_Click" />
+                <MenuItem Header="Линия" Click="LineToolBtn_Click" />
+                <MenuItem Header="Прямоугольник"  Click="RectToolBtn_Click" />
+                <MenuItem Header="Эллипс"  Click="EllipseToolBtn_Click" />
+                <MenuItem Header="Треугольник"  Click="TriangleToolBtn_Click" />
+                <MenuItem Header="Карандаш" Click="FreeDrawToolBtn_Click" />
             </MenuItem>
         </Menu>
-
-        <!-- Панель инструментов -->
-        <ToolBar DockPanel.Dock="Top">
-            <Button Name="CursorToolBtn" Content="Курсор" Click="CursorToolBtn_Click" />
-            <Button Name="LineToolBtn" Content="Линия" Click="LineToolBtn_Click" />
-            <Button Name="RectToolBtn" Content="Прямоугольник" Click="RectToolBtn_Click" />
-            <Button Name="EllipseToolBtn" Content="Эллипс" Click="EllipseToolBtn_Click" />
-            <Button Name="TriangleToolBtn" Content="Треугольник" Click="TriangleToolBtn_Click" />
-            <Button Name="FreeDrawToolBtn" Content="Карандаш" Click="FreeDrawToolBtn_Click" />
-        </ToolBar>
 
         <!-- Палитра цветов -->
         <StackPanel x:Name="PalettePanel" DockPanel.Dock="Top" Orientation="Horizontal" Margin="5" Background="LightGray">
