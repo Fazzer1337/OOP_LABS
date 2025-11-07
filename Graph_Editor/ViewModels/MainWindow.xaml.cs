@@ -1,15 +1,15 @@
 ﻿using GraphEditor.Models;
 using Microsoft.Win32;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Shapes;
 using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
 
 namespace GraphEditor
 {
@@ -234,7 +234,6 @@ namespace GraphEditor
         {
             e.Handled = !double.TryParse(((TextBox)sender).Text + e.Text, out _);
         }
-
 
         private void DrawCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -602,9 +601,36 @@ namespace GraphEditor
 
         private void SaveProject(string filePath)
         {
-            var options = new JsonSerializerOptions { WriteIndented = true, IncludeFields = true };
-            var json = JsonSerializer.Serialize(shapes, options);
+            var settings = new JsonSerializerSettings
+            {
+                TypeNameHandling = TypeNameHandling.All,
+                Formatting = Formatting.Indented
+            };
+            var json = JsonConvert.SerializeObject(shapes, settings);
             File.WriteAllText(filePath, json);
+        }
+
+        private async void OpenProject_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new OpenFileDialog { Filter = "Graph files|*.graph" };
+            if (dlg.ShowDialog() == true)
+            {
+                try
+                {
+                    string json = await File.ReadAllTextAsync(dlg.FileName);
+                    var settings = new JsonSerializerSettings
+                    {
+                        TypeNameHandling = TypeNameHandling.All
+                    };
+                    shapes = JsonConvert.DeserializeObject<List<ShapeBase>>(json, settings)!;
+                    selectedShape = null;
+                    RedrawCanvas();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка при открытии файла: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
         }
 
         private void SaveProject_Click(object sender, RoutedEventArgs e)
@@ -627,18 +653,6 @@ namespace GraphEditor
                     currentFilePath = dlg.FileName;
                     SaveProject(currentFilePath);
                 }
-            }
-        }
-
-        private void OpenProject_Click(object sender, RoutedEventArgs e)
-        {
-            var dlg = new OpenFileDialog { Filter = "Graph files|*.graph" };
-            if (dlg.ShowDialog() == true)
-            {
-                var json = File.ReadAllText(dlg.FileName);
-                shapes = JsonSerializer.Deserialize<List<ShapeBase>>(json)!;
-                selectedShape = null;
-                RedrawCanvas();
             }
         }
 

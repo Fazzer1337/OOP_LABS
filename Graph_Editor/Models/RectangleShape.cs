@@ -10,7 +10,7 @@ namespace GraphEditor.Models
         public double Width { get; set; }
         public double Height { get; set; }
 
-        public override void Draw(System.Windows.Controls.Canvas canvas)
+        public override void Draw(Canvas canvas)
         {
             var rect = new Rectangle
             {
@@ -18,18 +18,17 @@ namespace GraphEditor.Models
                 Height = Height,
                 Stroke = new SolidColorBrush(StrokeColor),
                 StrokeThickness = StrokeThickness,
-                Fill = IsFilled ? new SolidColorBrush(FillColor) : null
+                Fill = IsFilled ? new SolidColorBrush(FillColor) : null,
+                RenderTransformOrigin = new Point(0.5, 0.5),
+                RenderTransform = new RotateTransform(RotationAngle)
             };
-
-            double centerX = Position.X + Width / 2;
-            double centerY = Position.Y + Height / 2;
-            rect.RenderTransform = new RotateTransform(RotationAngle, centerX, centerY);
 
             Canvas.SetLeft(rect, Position.X);
             Canvas.SetTop(rect, Position.Y);
 
             canvas.Children.Add(rect);
         }
+
 
         public override bool ContainsPoint(Point point)
         {
