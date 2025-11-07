@@ -28,7 +28,9 @@ namespace GraphEditor
             Rectangle,
             Ellipse,
             Triangle,
-            FreeDraw
+            FreeDraw,
+            Eraser,
+            Text
         }
         private Tool currentTool = Tool.None;
         private Point startPoint;
@@ -42,7 +44,10 @@ namespace GraphEditor
 
         private Stack<List<ShapeBase>> undoStack = new();
         private Stack<List<ShapeBase>> redoStack = new();
+
         private ShapeBase? clipboardShape = null;
+
+        private double brushSize = 2.0;
 
         public MainWindow()
         {
@@ -78,6 +83,13 @@ namespace GraphEditor
         private void TriangleToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Triangle);
         private void CursorToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Cursor);
         private void FreeDrawToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.FreeDraw);
+        private void EraserToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Eraser);
+        private void TextToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Text);
+
+        private void BrushSizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            brushSize = e.NewValue;
+        }
 
         private void ColorPick_Click(object sender, RoutedEventArgs e)
         {
@@ -196,6 +208,47 @@ namespace GraphEditor
         private void DrawCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             var pos = e.GetPosition(DrawCanvas);
+
+            // Ластик — как карандаш, только цвет фона
+            if (currentTool == Tool.Eraser)
+            {
+                isDrawing = true;
+                Color eraseColor = Colors.White;
+                if (DrawCanvas.Background is SolidColorBrush brush)
+                    eraseColor = brush.Color;
+
+                currentStroke = new Polyline()
+                {
+                    Stroke = new SolidColorBrush(eraseColor),
+                    StrokeThickness = brushSize,
+                    Points = new PointCollection { pos }
+                };
+                DrawCanvas.Children.Add(currentStroke);
+                DrawCanvas.CaptureMouse();
+                SaveStateForUndo();
+                return;
+            }
+
+            if (currentTool == Tool.Text)
+            {
+                var inputDlg = new TextInputWindow();
+                if (inputDlg.ShowDialog() == true)
+                {
+                    SaveStateForUndo();
+                    var textShape = new TextShape()
+                    {
+                        Position = pos,
+                        Text = inputDlg.InputText,
+                        StrokeColor = selectedColor,
+                        FontSize = brushSize * 5
+                    };
+                    shapes.Add(textShape);
+                    selectedShape = textShape;
+                    RedrawCanvas();
+                }
+                return;
+            }
+
             if (currentTool == Tool.Cursor)
             {
                 selectedShape = null;
@@ -226,7 +279,7 @@ namespace GraphEditor
                     currentStroke = new Polyline()
                     {
                         Stroke = new SolidColorBrush(selectedColor),
-                        StrokeThickness = 2,
+                        StrokeThickness = brushSize,
                         Points = new PointCollection { startPoint }
                     };
                     DrawCanvas.Children.Add(currentStroke);
@@ -243,7 +296,7 @@ namespace GraphEditor
                                 Position = startPoint,
                                 EndPoint = startPoint,
                                 StrokeColor = selectedColor,
-                                StrokeThickness = 2
+                                StrokeThickness = brushSize
                             };
                             break;
                         case Tool.Rectangle:
@@ -254,7 +307,7 @@ namespace GraphEditor
                                 Height = 0,
                                 StrokeColor = selectedColor,
                                 FillColor = isFilled ? selectedColor : Colors.Transparent,
-                                StrokeThickness = 2,
+                                StrokeThickness = brushSize,
                                 IsFilled = isFilled
                             };
                             break;
@@ -266,7 +319,7 @@ namespace GraphEditor
                                 Height = 0,
                                 StrokeColor = selectedColor,
                                 FillColor = isFilled ? selectedColor : Colors.Transparent,
-                                StrokeThickness = 2,
+                                StrokeThickness = brushSize,
                                 IsFilled = isFilled
                             };
                             break;
@@ -278,7 +331,7 @@ namespace GraphEditor
                                 Point3 = startPoint,
                                 StrokeColor = selectedColor,
                                 FillColor = isFilled ? selectedColor : Colors.Transparent,
-                                StrokeThickness = 2,
+                                StrokeThickness = brushSize,
                                 IsFilled = isFilled
                             };
                             break;
@@ -296,6 +349,12 @@ namespace GraphEditor
             var pos = e.GetPosition(DrawCanvas);
             CursorPositionText.Text = $"Координаты курсора: {pos.X}, {pos.Y}";
 
+            if ((currentTool == Tool.Eraser || isFreeDrawing) && isDrawing && e.LeftButton == MouseButtonState.Pressed && currentStroke != null)
+            {
+                currentStroke.Points.Add(pos);
+                return;
+            }
+
             if (isMoving && selectedShape != null && e.LeftButton == MouseButtonState.Pressed)
             {
                 double dx = pos.X - moveStartPoint.X;
@@ -304,35 +363,28 @@ namespace GraphEditor
                 moveStartPoint = pos;
                 RedrawCanvas();
             }
-            else if (isDrawing)
+            else if (isDrawing && e.LeftButton == MouseButtonState.Pressed && tempShape != null)
             {
-                if (isFreeDrawing && e.LeftButton == MouseButtonState.Pressed && currentStroke != null)
+                if (tempShape is LineShape line)
+                    line.EndPoint = pos;
+                else if (tempShape is RectangleShape rect)
                 {
-                    currentStroke.Points.Add(pos);
+                    rect.Width = Math.Abs(pos.X - startPoint.X);
+                    rect.Height = Math.Abs(pos.Y - startPoint.Y);
+                    rect.Position = new Point(Math.Min(pos.X, startPoint.X), Math.Min(pos.Y, startPoint.Y));
                 }
-                else if (e.LeftButton == MouseButtonState.Pressed && tempShape != null)
+                else if (tempShape is EllipseShape ellipse)
                 {
-                    if (tempShape is LineShape line)
-                        line.EndPoint = pos;
-                    else if (tempShape is RectangleShape rect)
-                    {
-                        rect.Width = Math.Abs(pos.X - startPoint.X);
-                        rect.Height = Math.Abs(pos.Y - startPoint.Y);
-                        rect.Position = new Point(Math.Min(pos.X, startPoint.X), Math.Min(pos.Y, startPoint.Y));
-                    }
-                    else if (tempShape is EllipseShape ellipse)
-                    {
-                        ellipse.Width = Math.Abs(pos.X - startPoint.X);
-                        ellipse.Height = Math.Abs(pos.Y - startPoint.Y);
-                        ellipse.Position = new Point(Math.Min(pos.X, startPoint.X), Math.Min(pos.Y, startPoint.Y));
-                    }
-                    else if (tempShape is TriangleShape triangle)
-                    {
-                        triangle.Point2 = new Point(pos.X, startPoint.Y);
-                        triangle.Point3 = new Point((startPoint.X + pos.X) / 2, pos.Y);
-                    }
-                    RedrawCanvas();
+                    ellipse.Width = Math.Abs(pos.X - startPoint.X);
+                    ellipse.Height = Math.Abs(pos.Y - startPoint.Y);
+                    ellipse.Position = new Point(Math.Min(pos.X, startPoint.X), Math.Min(pos.Y, startPoint.Y));
                 }
+                else if (tempShape is TriangleShape triangle)
+                {
+                    triangle.Point2 = new Point(pos.X, startPoint.Y);
+                    triangle.Point3 = new Point((startPoint.X + pos.X) / 2, pos.Y);
+                }
+                RedrawCanvas();
             }
         }
 
@@ -346,15 +398,17 @@ namespace GraphEditor
             else if (isDrawing)
             {
                 isDrawing = false;
-                if (isFreeDrawing && currentStroke != null)
+                if ((isFreeDrawing || currentTool == Tool.Eraser) && currentStroke != null)
                 {
-                    var freeDraw = new FreeDrawShape()
+                    var shape = new FreeDrawShape()
                     {
                         Points = new List<Point>(currentStroke.Points),
-                        StrokeColor = selectedColor,
-                        StrokeThickness = 2
+                        StrokeColor = (currentTool == Tool.Eraser)
+                            ? (DrawCanvas.Background as SolidColorBrush)?.Color ?? Colors.White
+                            : selectedColor,
+                        StrokeThickness = brushSize
                     };
-                    shapes.Add(freeDraw);
+                    shapes.Add(shape);
                     DrawCanvas.ReleaseMouseCapture();
                     currentStroke = null;
                     tempShape = null;
@@ -632,6 +686,50 @@ namespace GraphEditor
                 var clone = (FreeDrawShape)this.MemberwiseClone();
                 clone.Points = new List<Point>(Points);
                 return clone;
+            }
+        }
+
+        public class TextShape : ShapeBase
+        {
+            public string Text { get; set; } = "";
+            public double FontSize { get; set; } = 12;
+
+            public override void Draw(Canvas canvas)
+            {
+                var tb = new TextBlock()
+                {
+                    Text = Text,
+                    Foreground = new SolidColorBrush(StrokeColor),
+                    FontSize = FontSize
+                };
+                Canvas.SetLeft(tb, Position.X);
+                Canvas.SetTop(tb, Position.Y);
+                canvas.Children.Add(tb);
+            }
+
+            public override bool ContainsPoint(Point point)
+            {
+                var rect = new Rect(Position.X, Position.Y, Text.Length * FontSize * 0.5, FontSize * 1.2);
+                return rect.Contains(point);
+            }
+
+            public override void MoveBy(double dx, double dy)
+            {
+                Position = new Point(Position.X + dx, Position.Y + dy);
+            }
+
+            public override ShapeBase Clone()
+            {
+                return new TextShape()
+                {
+                    Position = this.Position,
+                    Text = this.Text,
+                    StrokeColor = this.StrokeColor,
+                    FontSize = this.FontSize,
+                    StrokeThickness = this.StrokeThickness,
+                    FillColor = this.FillColor,
+                    IsFilled = this.IsFilled
+                };
             }
         }
     }

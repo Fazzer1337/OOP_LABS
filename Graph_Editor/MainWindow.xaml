@@ -38,6 +38,8 @@
                 <MenuItem Header="Эллипс" Click="EllipseToolBtn_Click"/>
                 <MenuItem Header="Треугольник" Click="TriangleToolBtn_Click"/>
                 <MenuItem Header="Карандаш" Click="FreeDrawToolBtn_Click"/>
+                <MenuItem Header="Ластик" Click="EraserToolBtn_Click"/>
+                <MenuItem Header="Текст" Click="TextToolBtn_Click"/>
             </MenuItem>
         </Menu>
         <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Background="#eee" Margin="5">
@@ -46,6 +48,8 @@
             <TextBlock Text="Цвет заливки:" VerticalAlignment="Center" Margin="5"/>
             <Button x:Name="FillColorBtn" Content="..." Width="25" Height="25" Margin="2" Click="FillColorBtn_Click"/>
             <CheckBox x:Name="FillCheckBox" Content="Заливка" VerticalAlignment="Center" Margin="10,0,0,0" Click="FillCheckBox_Click"/>
+            <TextBlock Text="Толщина кисти:" VerticalAlignment="Center" Margin="10,0,0,0"/>
+            <Slider x:Name="BrushSizeSlider" Minimum="1" Maximum="20" Value="2" Width="100" Margin="5,0" ValueChanged="BrushSizeSlider_ValueChanged"/>
         </StackPanel>
         <StackPanel x:Name="PalettePanel" DockPanel.Dock="Top" Orientation="Horizontal" Margin="5" Background="LightGray">
             <TextBlock Text="Выберите цвет:" VerticalAlignment="Center" Margin="5"/>
