@@ -9,6 +9,8 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using System.Windows.Media.Imaging;
+
 
 namespace GraphEditor
 {
@@ -65,7 +67,6 @@ namespace GraphEditor
 
             if (currentTool == Tool.Cursor)
             {
-                // Поиск по фигурам сверху вниз
                 selectedShape = null;
                 for (int i = shapes.Count - 1; i >= 0; i--)
                 {
@@ -157,6 +158,28 @@ namespace GraphEditor
             }
         }
 
+
+        private void SaveCanvasAsJpeg(string filePath)
+        {
+            double width = DrawCanvas.ActualWidth;
+            double height = DrawCanvas.ActualHeight;
+
+            var rtb = new RenderTargetBitmap(
+                (int)width, (int)height, 96d, 96d, PixelFormats.Pbgra32);
+            DrawCanvas.Measure(new Size(width, height));
+            DrawCanvas.Arrange(new Rect(new Size(width, height)));
+            rtb.Render(DrawCanvas);
+
+            JpegBitmapEncoder encoder = new JpegBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(rtb));
+
+            using (var fs = new FileStream(filePath, FileMode.Create))
+            {
+                encoder.Save(fs);
+            }
+        }
+
+
         private void DrawCanvas_MouseMove(object sender, MouseEventArgs e)
         {
             var pos = e.GetPosition(DrawCanvas);
@@ -242,12 +265,73 @@ namespace GraphEditor
         protected override void OnKeyDown(KeyEventArgs e)
         {
             base.OnKeyDown(e);
-
             if (e.Key == Key.Delete && selectedShape != null)
             {
                 shapes.Remove(selectedShape);
                 selectedShape = null;
                 RedrawCanvas();
+            }
+        }
+
+        // Изменение цвета обводки для выделенной фигуры
+        private void StrokeColorBtn_Click(object sender, RoutedEventArgs e)
+        {
+            // Используйте ваш color picker, например ColorPickerWindow
+            var dlg = new ColorPickerWindow();
+            if (dlg.ShowDialog() == true && selectedShape != null)
+            {
+                selectedShape.StrokeColor = dlg.SelectedColor;
+                RedrawCanvas();
+            }
+        }
+
+        // Изменение цвета заливки для выделенной фигуры
+        private void FillColorBtn_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new ColorPickerWindow();
+            if (dlg.ShowDialog() == true && selectedShape != null)
+            {
+                selectedShape.FillColor = dlg.SelectedColor;
+                selectedShape.IsFilled = true;
+                RedrawCanvas();
+            }
+        }
+
+        // Если вы хотите снимать заливку через UI, добавьте соответствующую обработку чекбокса
+        private void FillCheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            if (currentTool == Tool.Cursor && selectedShape != null)
+            {
+                selectedShape.IsFilled = FillCheckBox.IsChecked == true;
+                RedrawCanvas();
+            }
+        }
+
+        // Палитра цветов для новых объектов (не для выделенных фигур)
+        private void ColorPick_Click(object sender, RoutedEventArgs e)
+        {
+            var btn = sender as Button;
+            if (btn != null && btn.Background is SolidColorBrush brush)
+            {
+                selectedColor = brush.Color;
+            }
+        }
+
+        private void AddColor_Click(object sender, RoutedEventArgs e)
+        {
+            var colorDialog = new ColorPickerWindow();
+            if (colorDialog.ShowDialog() == true)
+            {
+                selectedColor = colorDialog.SelectedColor;
+                var btn = new Button
+                {
+                    Background = new SolidColorBrush(selectedColor),
+                    Width = 25,
+                    Height = 25,
+                    Margin = new Thickness(2)
+                };
+                btn.Click += ColorPick_Click;
+                PalettePanel.Children.Add(btn);
             }
         }
 
@@ -260,7 +344,6 @@ namespace GraphEditor
             if (tempShape != null)
                 tempShape.Draw(DrawCanvas);
 
-            // Optional: выделить выбранную фигуру рамкой
             if (selectedShape != null)
             {
                 var bounds = GetShapeBounds(selectedShape);
@@ -281,7 +364,6 @@ namespace GraphEditor
             }
         }
 
-        // Получает ограничивающий прямоугольник фигуры (для выделения)
         private Rect GetShapeBounds(ShapeBase shape)
         {
             if (shape is RectangleShape r)
@@ -319,8 +401,6 @@ namespace GraphEditor
             return Rect.Empty;
         }
 
-        // Меню Файл -- далее ваш базовый код без изменений
-
         private void NewProject_Click(object sender, RoutedEventArgs e)
         {
             shapes.Clear();
@@ -346,40 +426,22 @@ namespace GraphEditor
 
         private void SaveAsProject_Click(object sender, RoutedEventArgs e)
         {
-            var dlg = new SaveFileDialog { Filter = "Graph files|*.graph" };
+            var dlg = new SaveFileDialog
+            {
+                Filter = "Graph files|*.graph|JPEG image|*.jpeg"
+            };
             if (dlg.ShowDialog() == true)
             {
-                currentFilePath = dlg.FileName;
-                SaveProject(currentFilePath);
-            }
-        }
-
-        private void ColorPick_Click(object sender, RoutedEventArgs e)
-        {
-            var btn = sender as Button;
-            if (btn != null && btn.Background is SolidColorBrush brush)
-            {
-                selectedColor = brush.Color;
-            }
-        }
-
-        private void AddColor_Click(object sender, RoutedEventArgs e)
-        {
-            var colorDialog = new ColorPickerWindow();
-            if (colorDialog.ShowDialog() == true)
-            {
-                selectedColor = colorDialog.SelectedColor;
-                var btn = new Button
+                if (dlg.FileName.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase))
+                    SaveCanvasAsJpeg(dlg.FileName);
+                else
                 {
-                    Background = new SolidColorBrush(selectedColor),
-                    Width = 25,
-                    Height = 25,
-                    Margin = new Thickness(2)
-                };
-                btn.Click += ColorPick_Click;
-                PalettePanel.Children.Add(btn);
+                    currentFilePath = dlg.FileName;
+                    SaveProject(currentFilePath);
+                }
             }
         }
+
 
         private void OpenProject_Click(object sender, RoutedEventArgs e)
         {
@@ -396,7 +458,6 @@ namespace GraphEditor
         private void Exit_Click(object sender, RoutedEventArgs e) => Close();
     }
 
-    // Полноценная фигура для свободного рисования
     public class FreeDrawShape : ShapeBase
     {
         public List<Point> Points { get; set; } = new List<Point>();

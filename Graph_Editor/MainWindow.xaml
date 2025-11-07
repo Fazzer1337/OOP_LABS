@@ -31,14 +31,21 @@
             </MenuItem>
         </Menu>
 
-        <!-- Палитра цветов -->
+        <!-- Панель редактирования выделенной фигуры -->
+        <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Background="#eee" Margin="5">
+            <TextBlock Text="Цвет контура:" VerticalAlignment="Center" Margin="5"/>
+            <Button x:Name="StrokeColorBtn" Content="..." Width="25" Height="25" Margin="2" Click="StrokeColorBtn_Click"/>
+            <TextBlock Text="Цвет заливки:" VerticalAlignment="Center" Margin="5"/>
+            <Button x:Name="FillColorBtn" Content="..." Width="25" Height="25" Margin="2" Click="FillColorBtn_Click"/>
+            <CheckBox x:Name="FillCheckBox" Content="Заливка" VerticalAlignment="Center" Margin="10,0,0,0"/>
+        </StackPanel>
+
+        <!-- Палитра цветов для новых объектов -->
         <StackPanel x:Name="PalettePanel" DockPanel.Dock="Top" Orientation="Horizontal" Margin="5" Background="LightGray">
             <TextBlock Text="Выберите цвет:" VerticalAlignment="Center" Margin="5"/>
             <Button Background="Black" Width="25" Height="25" Margin="2" Click="ColorPick_Click"/>
             <Button Content="+" Width="25" Height="25" Margin="2" Click="AddColor_Click"/>
-            <CheckBox x:Name="FillCheckBox" Content="Заливка" VerticalAlignment="Center" Margin="10,0,0,0"/>
         </StackPanel>
-
 
         <!-- Область рисования с полосами прокрутки -->
         <ScrollViewer DockPanel.Dock="Top" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
