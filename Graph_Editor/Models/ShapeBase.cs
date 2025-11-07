@@ -1,6 +1,5 @@
 ﻿using System.Windows;
 using System.Windows.Media;
-using System.Windows.Controls;
 
 namespace GraphEditor.Models
 {
@@ -9,10 +8,12 @@ namespace GraphEditor.Models
         public Point Position { get; set; }
         public Color StrokeColor { get; set; } = Colors.Black;
         public Color FillColor { get; set; } = Colors.Transparent;
-        public bool IsFilled { get; set; } = false;
         public double StrokeThickness { get; set; } = 2;
+        public bool IsFilled { get; set; } = false;
 
-        public abstract void Draw(Canvas c);
+        public double RotationAngle { get; set; } = 0; 
+
+        public abstract void Draw(System.Windows.Controls.Canvas canvas);
         public abstract bool ContainsPoint(Point point);
         public abstract void MoveBy(double dx, double dy);
         public abstract ShapeBase Clone();

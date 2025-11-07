@@ -10,7 +10,7 @@ namespace GraphEditor.Models
         public double Width { get; set; }
         public double Height { get; set; }
 
-        public override void Draw(Canvas c)
+        public override void Draw(System.Windows.Controls.Canvas canvas)
         {
             var rect = new Rectangle
             {
@@ -20,15 +20,32 @@ namespace GraphEditor.Models
                 StrokeThickness = StrokeThickness,
                 Fill = IsFilled ? new SolidColorBrush(FillColor) : null
             };
+
+            double centerX = Position.X + Width / 2;
+            double centerY = Position.Y + Height / 2;
+            rect.RenderTransform = new RotateTransform(RotationAngle, centerX, centerY);
+
             Canvas.SetLeft(rect, Position.X);
             Canvas.SetTop(rect, Position.Y);
-            c.Children.Add(rect);
+
+            canvas.Children.Add(rect);
         }
 
         public override bool ContainsPoint(Point point)
         {
+            var center = new Point(Position.X + Width / 2, Position.Y + Height / 2);
+            var angleRad = -RotationAngle * System.Math.PI / 180.0;
+            var sin = System.Math.Sin(angleRad);
+            var cos = System.Math.Cos(angleRad);
+
+            var dx = point.X - center.X;
+            var dy = point.Y - center.Y;
+
+            var x = cos * dx - sin * dy + center.X;
+            var y = sin * dx + cos * dy + center.Y;
+
             var rect = new Rect(Position.X, Position.Y, Width, Height);
-            return rect.Contains(point);
+            return rect.Contains(new Point(x, y));
         }
 
         public override void MoveBy(double dx, double dy)
@@ -38,7 +55,7 @@ namespace GraphEditor.Models
 
         public override ShapeBase Clone()
         {
-            return new RectangleShape
+            return new RectangleShape()
             {
                 Position = this.Position,
                 Width = this.Width,
@@ -46,7 +63,8 @@ namespace GraphEditor.Models
                 StrokeColor = this.StrokeColor,
                 FillColor = this.FillColor,
                 StrokeThickness = this.StrokeThickness,
-                IsFilled = this.IsFilled
+                IsFilled = this.IsFilled,
+                RotationAngle = this.RotationAngle
             };
         }
     }

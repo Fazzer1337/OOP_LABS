@@ -31,7 +31,8 @@ namespace GraphEditor
             FreeDraw,
             Eraser,
             Text,
-            Fill
+            Fill,
+            Rotate  // Новый инструмент
         }
         private Tool currentTool = Tool.None;
         private Point startPoint;
@@ -78,6 +79,7 @@ namespace GraphEditor
             RedrawCanvas();
         }
 
+        // Обработчики кнопок выбора инструментов
         private void LineToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Line);
         private void RectToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Rectangle);
         private void EllipseToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Ellipse);
@@ -87,6 +89,7 @@ namespace GraphEditor
         private void EraserToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Eraser);
         private void TextToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Text);
         private void FillToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Fill);
+        private void RotateToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Rotate);
 
         private void BrushSizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
@@ -119,12 +122,7 @@ namespace GraphEditor
 
         private void StrokeColorBtn_Click(object sender, RoutedEventArgs e)
         {
-            if (selectedShape == null)
-            {
-                MessageBox.Show("Сначала выберите фигуру для изменения цвета контура.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
+            if (selectedShape == null) return;
             var dlg = new ColorPickerWindow();
             if (dlg.ShowDialog() == true)
             {
@@ -134,15 +132,9 @@ namespace GraphEditor
             }
         }
 
-
         private void FillColorBtn_Click(object sender, RoutedEventArgs e)
         {
-            if (selectedShape == null)
-            {
-                MessageBox.Show("Сначала выберите фигуру для изменения цвета заливки.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
+            if (selectedShape == null) return;
             var dlg = new ColorPickerWindow();
             if (dlg.ShowDialog() == true)
             {
@@ -152,7 +144,6 @@ namespace GraphEditor
                 RedrawCanvas();
             }
         }
-
 
         private void FillCheckBox_Click(object sender, RoutedEventArgs e)
         {
@@ -207,7 +198,6 @@ namespace GraphEditor
             selectedShape = null;
             RedrawCanvas();
         }
-
         private void Delete_Click(object sender, RoutedEventArgs e)
         {
             DeleteSelectedShape();
@@ -219,6 +209,32 @@ namespace GraphEditor
             if (e.Key == Key.Delete)
                 DeleteSelectedShape();
         }
+
+        private void ApplyRotateAngle_Click(object sender, RoutedEventArgs e)
+        {
+            if (selectedShape == null)
+            {
+                MessageBox.Show("Сначала выберите фигуру для поворота.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            if (double.TryParse(RotateAngleBox.Text, out double angle))
+            {
+                SaveStateForUndo();
+                selectedShape.RotationAngle = angle;
+                RedrawCanvas();
+            }
+            else
+            {
+                MessageBox.Show("Введите корректный угол в градусах.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        // Для ограничения TextBox только числами:
+        private void RotateAngleBox_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
+        {
+            e.Handled = !double.TryParse(((TextBox)sender).Text + e.Text, out _);
+        }
+
 
         private void DrawCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -236,6 +252,23 @@ namespace GraphEditor
                         RedrawCanvas();
                         break;
                     }
+                }
+                return;
+            }
+
+            if (currentTool == Tool.Rotate)
+            {
+                if (selectedShape == null)
+                {
+                    MessageBox.Show("Сначала выберите фигуру для поворота.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+                var inputDlg = new RotationInputWindow();
+                if (inputDlg.ShowDialog() == true)
+                {
+                    SaveStateForUndo();
+                    selectedShape.RotationAngle += inputDlg.RotationAngle;
+                    RedrawCanvas();
                 }
                 return;
             }
@@ -676,6 +709,8 @@ namespace GraphEditor
             }
             return Rect.Empty;
         }
+
+        //---------------------------
 
         public class FreeDrawShape : ShapeBase
         {

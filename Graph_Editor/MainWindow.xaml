@@ -51,6 +51,9 @@
             <CheckBox x:Name="FillCheckBox" Content="Заливка" VerticalAlignment="Center" Margin="10,0,0,0" Click="FillCheckBox_Click"/>
             <TextBlock Text="Толщина кисти:" VerticalAlignment="Center" Margin="10,0,0,0"/>
             <Slider x:Name="BrushSizeSlider" Minimum="1" Maximum="20" Value="2" Width="100" Margin="5,0" ValueChanged="BrushSizeSlider_ValueChanged"/>
+            <TextBlock Text="Поворот (°):" VerticalAlignment="Center" Margin="15,0,0,0"/>
+            <TextBox x:Name="RotateAngleBox" Width="40" Height="24" Margin="3,0" VerticalAlignment="Center" PreviewTextInput="RotateAngleBox_PreviewTextInput"/>
+            <Button Content="Применить" Width="75" Height="25" Margin="3,0" Click="ApplyRotateAngle_Click"/>
         </StackPanel>
         <StackPanel x:Name="PalettePanel" DockPanel.Dock="Top" Orientation="Horizontal" Margin="5" Background="LightGray">
             <TextBlock Text="Выберите цвет:" VerticalAlignment="Center" Margin="5"/>

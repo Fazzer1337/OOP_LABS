@@ -10,7 +10,7 @@ namespace GraphEditor.Models
         public double Width { get; set; }
         public double Height { get; set; }
 
-        public override void Draw(Canvas c)
+        public override void Draw(System.Windows.Controls.Canvas canvas)
         {
             var ellipse = new Ellipse
             {
@@ -20,21 +20,38 @@ namespace GraphEditor.Models
                 StrokeThickness = StrokeThickness,
                 Fill = IsFilled ? new SolidColorBrush(FillColor) : null
             };
+
+            double centerX = Position.X + Width / 2;
+            double centerY = Position.Y + Height / 2;
+            ellipse.RenderTransform = new RotateTransform(RotationAngle, centerX, centerY);
+
             Canvas.SetLeft(ellipse, Position.X);
             Canvas.SetTop(ellipse, Position.Y);
-            c.Children.Add(ellipse);
+
+            canvas.Children.Add(ellipse);
         }
 
         public override bool ContainsPoint(Point point)
         {
-            double cx = Position.X + Width / 2;
-            double cy = Position.Y + Height / 2;
+            double centerX = Position.X + Width / 2;
+            double centerY = Position.Y + Height / 2;
+            var angleRad = -RotationAngle * System.Math.PI / 180.0;
+            var sin = System.Math.Sin(angleRad);
+            var cos = System.Math.Cos(angleRad);
+
+            var dx = point.X - centerX;
+            var dy = point.Y - centerY;
+
+            var x = cos * dx - sin * dy + centerX;
+            var y = sin * dx + cos * dy + centerY;
+
             double rx = Width / 2;
             double ry = Height / 2;
 
-            double dx = point.X - cx;
-            double dy = point.Y - cy;
-            return (dx * dx) / (rx * rx) + (dy * dy) / (ry * ry) <= 1;
+            double nx = (x - centerX) / rx;
+            double ny = (y - centerY) / ry;
+
+            return nx * nx + ny * ny <= 1.0;
         }
 
         public override void MoveBy(double dx, double dy)
@@ -44,7 +61,7 @@ namespace GraphEditor.Models
 
         public override ShapeBase Clone()
         {
-            return new EllipseShape
+            return new EllipseShape()
             {
                 Position = this.Position,
                 Width = this.Width,
@@ -52,7 +69,8 @@ namespace GraphEditor.Models
                 StrokeColor = this.StrokeColor,
                 FillColor = this.FillColor,
                 StrokeThickness = this.StrokeThickness,
-                IsFilled = this.IsFilled
+                IsFilled = this.IsFilled,
+                RotationAngle = this.RotationAngle
             };
         }
     }
