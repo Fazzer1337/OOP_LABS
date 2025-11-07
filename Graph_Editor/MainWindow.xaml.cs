@@ -30,7 +30,8 @@ namespace GraphEditor
             Triangle,
             FreeDraw,
             Eraser,
-            Text
+            Text,
+            Fill
         }
         private Tool currentTool = Tool.None;
         private Point startPoint;
@@ -85,6 +86,7 @@ namespace GraphEditor
         private void FreeDrawToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.FreeDraw);
         private void EraserToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Eraser);
         private void TextToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Text);
+        private void FillToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Fill);
 
         private void BrushSizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
@@ -117,7 +119,12 @@ namespace GraphEditor
 
         private void StrokeColorBtn_Click(object sender, RoutedEventArgs e)
         {
-            if (selectedShape == null) return;
+            if (selectedShape == null)
+            {
+                MessageBox.Show("Сначала выберите фигуру для изменения цвета контура.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             var dlg = new ColorPickerWindow();
             if (dlg.ShowDialog() == true)
             {
@@ -127,9 +134,15 @@ namespace GraphEditor
             }
         }
 
+
         private void FillColorBtn_Click(object sender, RoutedEventArgs e)
         {
-            if (selectedShape == null) return;
+            if (selectedShape == null)
+            {
+                MessageBox.Show("Сначала выберите фигуру для изменения цвета заливки.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             var dlg = new ColorPickerWindow();
             if (dlg.ShowDialog() == true)
             {
@@ -139,6 +152,7 @@ namespace GraphEditor
                 RedrawCanvas();
             }
         }
+
 
         private void FillCheckBox_Click(object sender, RoutedEventArgs e)
         {
@@ -193,6 +207,7 @@ namespace GraphEditor
             selectedShape = null;
             RedrawCanvas();
         }
+
         private void Delete_Click(object sender, RoutedEventArgs e)
         {
             DeleteSelectedShape();
@@ -209,7 +224,22 @@ namespace GraphEditor
         {
             var pos = e.GetPosition(DrawCanvas);
 
-            // Ластик — как карандаш, только цвет фона
+            if (currentTool == Tool.Fill)
+            {
+                for (int i = shapes.Count - 1; i >= 0; i--)
+                {
+                    if (shapes[i].ContainsPoint(pos))
+                    {
+                        SaveStateForUndo();
+                        shapes[i].FillColor = selectedColor;
+                        shapes[i].IsFilled = true;
+                        RedrawCanvas();
+                        break;
+                    }
+                }
+                return;
+            }
+
             if (currentTool == Tool.Eraser)
             {
                 isDrawing = true;
@@ -245,8 +275,8 @@ namespace GraphEditor
                     shapes.Add(textShape);
                     selectedShape = textShape;
                     RedrawCanvas();
+                    return;
                 }
-                return;
             }
 
             if (currentTool == Tool.Cursor)

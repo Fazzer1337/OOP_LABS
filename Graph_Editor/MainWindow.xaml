@@ -40,6 +40,7 @@
                 <MenuItem Header="Карандаш" Click="FreeDrawToolBtn_Click"/>
                 <MenuItem Header="Ластик" Click="EraserToolBtn_Click"/>
                 <MenuItem Header="Текст" Click="TextToolBtn_Click"/>
+                <MenuItem Header="Заливка" Click="FillToolBtn_Click"/>
             </MenuItem>
         </Menu>
         <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Background="#eee" Margin="5">
