@@ -36,7 +36,9 @@
             <TextBlock Text="Выберите цвет:" VerticalAlignment="Center" Margin="5"/>
             <Button Background="Black" Width="25" Height="25" Margin="2" Click="ColorPick_Click"/>
             <Button Content="+" Width="25" Height="25" Margin="2" Click="AddColor_Click"/>
+            <CheckBox x:Name="FillCheckBox" Content="Заливка" VerticalAlignment="Center" Margin="10,0,0,0"/>
         </StackPanel>
+
 
         <!-- Область рисования с полосами прокрутки -->
         <ScrollViewer DockPanel.Dock="Top" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">

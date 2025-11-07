@@ -15,6 +15,9 @@ namespace GraphEditor
     public partial class MainWindow : Window
     {
         private List<ShapeBase> shapes = new List<ShapeBase>();
+        private ShapeBase? selectedShape = null;
+        private bool isMoving = false;
+        private Point moveStartPoint;
 
         private enum Tool
         {
@@ -30,7 +33,7 @@ namespace GraphEditor
         private Tool currentTool = Tool.None;
         private Point startPoint;
         private ShapeBase? tempShape;
-        private Color selectedColor = Colors.Black; // предположим, что управление цветом есть
+        private Color selectedColor = Colors.Black;
         private Polyline? currentStroke;
         private bool isFreeDrawing = false;
         private string? currentFilePath = null;
@@ -41,14 +44,14 @@ namespace GraphEditor
             InitializeComponent();
         }
 
-        // Изменение текущего инструмента
         private void ChangeTool(Tool tool)
         {
             currentTool = tool;
             isFreeDrawing = (tool == Tool.FreeDraw);
+            selectedShape = null;
+            isMoving = false;
         }
 
-        // Обработчики кнопок инструмента
         private void LineToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Line);
         private void RectToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Rectangle);
         private void EllipseToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Ellipse);
@@ -56,76 +59,101 @@ namespace GraphEditor
         private void CursorToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Cursor);
         private void FreeDrawToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.FreeDraw);
 
-        // Логика рисования
         private void DrawCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            isDrawing = true;
-            startPoint = e.GetPosition(DrawCanvas);
-            if (isFreeDrawing)
+            var pos = e.GetPosition(DrawCanvas);
+
+            if (currentTool == Tool.Cursor)
             {
-                currentStroke = new Polyline
+                // Поиск по фигурам сверху вниз
+                selectedShape = null;
+                for (int i = shapes.Count - 1; i >= 0; i--)
                 {
-                    Stroke = new SolidColorBrush(selectedColor),
-                    StrokeThickness = 2,
-                    Points = new PointCollection { startPoint }
-                };
-                DrawCanvas.Children.Add(currentStroke);
-                DrawCanvas.CaptureMouse();
+                    if (shapes[i].ContainsPoint(pos))
+                    {
+                        selectedShape = shapes[i];
+                        break;
+                    }
+                }
+                if (selectedShape != null)
+                {
+                    isMoving = true;
+                    moveStartPoint = pos;
+                    DrawCanvas.CaptureMouse();
+                }
             }
             else
             {
-                switch (currentTool)
+                isDrawing = true;
+                startPoint = pos;
+
+                if (isFreeDrawing)
                 {
-                    case Tool.Line:
-                        tempShape = new LineShape
-                        {
-                            Position = startPoint,
-                            EndPoint = startPoint,
-                            StrokeColor = selectedColor,
-                            StrokeThickness = 2
-                        };
-                        break;
-                    case Tool.Rectangle:
-                        tempShape = new RectangleShape
-                        {
-                            Position = startPoint,
-                            Width = 0,
-                            Height = 0,
-                            StrokeColor = selectedColor,
-                            FillColor = Colors.Transparent,
-                            StrokeThickness = 2,
-                            IsFilled = false
-                        };
-                        break;
-                    case Tool.Ellipse:
-                        tempShape = new EllipseShape
-                        {
-                            Position = startPoint,
-                            Width = 0,
-                            Height = 0,
-                            StrokeColor = selectedColor,
-                            FillColor = Colors.Transparent,
-                            StrokeThickness = 2,
-                            IsFilled = false
-                        };
-                        break;
-                    case Tool.Triangle:
-                        tempShape = new TriangleShape
-                        {
-                            Position = startPoint,
-                            Point2 = startPoint,
-                            Point3 = startPoint,
-                            StrokeColor = selectedColor,
-                            FillColor = Colors.Transparent,
-                            StrokeThickness = 2,
-                            IsFilled = false
-                        };
-                        break;
-                    default:
-                        tempShape = null;
-                        break;
+                    currentStroke = new Polyline
+                    {
+                        Stroke = new SolidColorBrush(selectedColor),
+                        StrokeThickness = 2,
+                        Points = new PointCollection { startPoint }
+                    };
+                    DrawCanvas.Children.Add(currentStroke);
+                    DrawCanvas.CaptureMouse();
                 }
-                RedrawCanvas(); // показать начальную форму
+                else
+                {
+                    bool isFilled = FillCheckBox.IsChecked == true;
+                    switch (currentTool)
+                    {
+                        case Tool.Line:
+                            tempShape = new LineShape
+                            {
+                                Position = startPoint,
+                                EndPoint = startPoint,
+                                StrokeColor = selectedColor,
+                                StrokeThickness = 2
+                            };
+                            break;
+                        case Tool.Rectangle:
+                            tempShape = new RectangleShape
+                            {
+                                Position = startPoint,
+                                Width = 0,
+                                Height = 0,
+                                StrokeColor = selectedColor,
+                                FillColor = isFilled ? selectedColor : Colors.Transparent,
+                                StrokeThickness = 2,
+                                IsFilled = isFilled
+                            };
+                            break;
+                        case Tool.Ellipse:
+                            tempShape = new EllipseShape
+                            {
+                                Position = startPoint,
+                                Width = 0,
+                                Height = 0,
+                                StrokeColor = selectedColor,
+                                FillColor = isFilled ? selectedColor : Colors.Transparent,
+                                StrokeThickness = 2,
+                                IsFilled = isFilled
+                            };
+                            break;
+                        case Tool.Triangle:
+                            tempShape = new TriangleShape
+                            {
+                                Position = startPoint,
+                                Point2 = startPoint,
+                                Point3 = startPoint,
+                                StrokeColor = selectedColor,
+                                FillColor = isFilled ? selectedColor : Colors.Transparent,
+                                StrokeThickness = 2,
+                                IsFilled = isFilled
+                            };
+                            break;
+                        default:
+                            tempShape = null;
+                            break;
+                    }
+                    RedrawCanvas();
+                }
             }
         }
 
@@ -134,7 +162,15 @@ namespace GraphEditor
             var pos = e.GetPosition(DrawCanvas);
             CursorPositionText.Text = $"Координаты курсора: {pos.X}, {pos.Y}";
 
-            if (isDrawing)
+            if (isMoving && selectedShape != null && e.LeftButton == MouseButtonState.Pressed)
+            {
+                double dx = pos.X - moveStartPoint.X;
+                double dy = pos.Y - moveStartPoint.Y;
+                selectedShape.MoveBy(dx, dy);
+                moveStartPoint = pos;
+                RedrawCanvas();
+            }
+            else if (isDrawing)
             {
                 if (isFreeDrawing && e.LeftButton == MouseButtonState.Pressed && currentStroke != null)
                 {
@@ -170,28 +206,47 @@ namespace GraphEditor
 
         private void DrawCanvas_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            if (!isDrawing) return;
-            isDrawing = false;
-
-            if (isFreeDrawing && currentStroke != null)
+            if (isMoving)
             {
-                var freeDraw = new FreeDrawShape
-                {
-                    Points = new List<Point>(currentStroke.Points),
-                    StrokeColor = selectedColor,
-                    StrokeThickness = 2
-                };
-                shapes.Add(freeDraw);
-
+                isMoving = false;
                 DrawCanvas.ReleaseMouseCapture();
-                currentStroke = null;
-                tempShape = null;
-                RedrawCanvas();
             }
-            else if (tempShape != null)
+            else if (isDrawing)
             {
-                shapes.Add(tempShape);
-                tempShape = null;
+                isDrawing = false;
+
+                if (isFreeDrawing && currentStroke != null)
+                {
+                    var freeDraw = new FreeDrawShape
+                    {
+                        Points = new List<Point>(currentStroke.Points),
+                        StrokeColor = selectedColor,
+                        StrokeThickness = 2
+                    };
+                    shapes.Add(freeDraw);
+
+                    DrawCanvas.ReleaseMouseCapture();
+                    currentStroke = null;
+                    tempShape = null;
+                    RedrawCanvas();
+                }
+                else if (tempShape != null)
+                {
+                    shapes.Add(tempShape);
+                    tempShape = null;
+                    RedrawCanvas();
+                }
+            }
+        }
+
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            base.OnKeyDown(e);
+
+            if (e.Key == Key.Delete && selectedShape != null)
+            {
+                shapes.Remove(selectedShape);
+                selectedShape = null;
                 RedrawCanvas();
             }
         }
@@ -204,9 +259,68 @@ namespace GraphEditor
 
             if (tempShape != null)
                 tempShape.Draw(DrawCanvas);
+
+            // Optional: выделить выбранную фигуру рамкой
+            if (selectedShape != null)
+            {
+                var bounds = GetShapeBounds(selectedShape);
+                if (bounds != Rect.Empty)
+                {
+                    var selectionRect = new Rectangle
+                    {
+                        Width = bounds.Width,
+                        Height = bounds.Height,
+                        Stroke = Brushes.Blue,
+                        StrokeThickness = 2,
+                        StrokeDashArray = new DoubleCollection { 2 }
+                    };
+                    Canvas.SetLeft(selectionRect, bounds.X);
+                    Canvas.SetTop(selectionRect, bounds.Y);
+                    DrawCanvas.Children.Add(selectionRect);
+                }
+            }
         }
 
-        // Меню Файл
+        // Получает ограничивающий прямоугольник фигуры (для выделения)
+        private Rect GetShapeBounds(ShapeBase shape)
+        {
+            if (shape is RectangleShape r)
+                return new Rect(r.Position.X, r.Position.Y, r.Width, r.Height);
+            if (shape is EllipseShape e)
+                return new Rect(e.Position.X, e.Position.Y, e.Width, e.Height);
+            if (shape is LineShape l)
+            {
+                double minX = Math.Min(l.Position.X, l.EndPoint.X);
+                double minY = Math.Min(l.Position.Y, l.EndPoint.Y);
+                double w = Math.Abs(l.Position.X - l.EndPoint.X);
+                double h = Math.Abs(l.Position.Y - l.EndPoint.Y);
+                return new Rect(minX, minY, w, h);
+            }
+            if (shape is TriangleShape t)
+            {
+                double minX = Math.Min(t.Position.X, Math.Min(t.Point2.X, t.Point3.X));
+                double minY = Math.Min(t.Position.Y, Math.Min(t.Point2.Y, t.Point3.Y));
+                double maxX = Math.Max(t.Position.X, Math.Max(t.Point2.X, t.Point3.X));
+                double maxY = Math.Max(t.Position.Y, Math.Max(t.Point2.Y, t.Point3.Y));
+                return new Rect(minX, minY, maxX - minX, maxY - minY);
+            }
+            if (shape is FreeDrawShape f && f.Points.Count > 0)
+            {
+                double minX = double.MaxValue, minY = double.MaxValue, maxX = double.MinValue, maxY = double.MinValue;
+                foreach (var p in f.Points)
+                {
+                    minX = Math.Min(minX, p.X);
+                    minY = Math.Min(minY, p.Y);
+                    maxX = Math.Max(maxX, p.X);
+                    maxY = Math.Max(maxY, p.Y);
+                }
+                return new Rect(minX, minY, maxX - minX, maxY - minY);
+            }
+            return Rect.Empty;
+        }
+
+        // Меню Файл -- далее ваш базовый код без изменений
+
         private void NewProject_Click(object sender, RoutedEventArgs e)
         {
             shapes.Clear();
@@ -239,6 +353,7 @@ namespace GraphEditor
                 SaveProject(currentFilePath);
             }
         }
+
         private void ColorPick_Click(object sender, RoutedEventArgs e)
         {
             var btn = sender as Button;
@@ -250,7 +365,6 @@ namespace GraphEditor
 
         private void AddColor_Click(object sender, RoutedEventArgs e)
         {
-            // Пример, если появилась палитра, вызов вашего ColorPickerWindow
             var colorDialog = new ColorPickerWindow();
             if (colorDialog.ShowDialog() == true)
             {
@@ -266,6 +380,7 @@ namespace GraphEditor
                 PalettePanel.Children.Add(btn);
             }
         }
+
         private void OpenProject_Click(object sender, RoutedEventArgs e)
         {
             var dlg = new OpenFileDialog { Filter = "Graph files|*.graph" };
@@ -281,10 +396,11 @@ namespace GraphEditor
         private void Exit_Click(object sender, RoutedEventArgs e) => Close();
     }
 
-    // Класс для свободного рисования (карандаш)
+    // Полноценная фигура для свободного рисования
     public class FreeDrawShape : ShapeBase
     {
         public List<Point> Points { get; set; } = new List<Point>();
+
         public override void Draw(Canvas c)
         {
             var pl = new Polyline
@@ -294,6 +410,25 @@ namespace GraphEditor
                 Points = new PointCollection(Points)
             };
             c.Children.Add(pl);
+        }
+
+        public override bool ContainsPoint(Point point)
+        {
+            foreach (var p in Points)
+            {
+                if (Math.Abs(point.X - p.X) <= StrokeThickness + 2 &&
+                    Math.Abs(point.Y - p.Y) <= StrokeThickness + 2)
+                    return true;
+            }
+            return false;
+        }
+
+        public override void MoveBy(double dx, double dy)
+        {
+            for (int i = 0; i < Points.Count; i++)
+            {
+                Points[i] = new Point(Points[i].X + dx, Points[i].Y + dy);
+            }
         }
     }
 }
