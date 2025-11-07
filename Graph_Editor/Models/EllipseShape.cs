@@ -10,9 +10,9 @@ namespace GraphEditor.Models
         public double Width { get; set; }
         public double Height { get; set; }
 
-        public override void Draw(Canvas canvas)
+        public override void Draw(Canvas c)
         {
-            Ellipse ellipse = new Ellipse
+            var ellipse = new Ellipse
             {
                 Width = Width,
                 Height = Height,
@@ -22,22 +22,38 @@ namespace GraphEditor.Models
             };
             Canvas.SetLeft(ellipse, Position.X);
             Canvas.SetTop(ellipse, Position.Y);
-            canvas.Children.Add(ellipse);
+            c.Children.Add(ellipse);
         }
 
         public override bool ContainsPoint(Point point)
         {
+            double cx = Position.X + Width / 2;
+            double cy = Position.Y + Height / 2;
             double rx = Width / 2;
             double ry = Height / 2;
-            double cx = Position.X + rx;
-            double cy = Position.Y + ry;
-            double norm = Math.Pow((point.X - cx) / rx, 2) + Math.Pow((point.Y - cy) / ry, 2);
-            return norm <= 1.0;
+
+            double dx = point.X - cx;
+            double dy = point.Y - cy;
+            return (dx * dx) / (rx * rx) + (dy * dy) / (ry * ry) <= 1;
         }
 
         public override void MoveBy(double dx, double dy)
         {
             Position = new Point(Position.X + dx, Position.Y + dy);
+        }
+
+        public override ShapeBase Clone()
+        {
+            return new EllipseShape
+            {
+                Position = this.Position,
+                Width = this.Width,
+                Height = this.Height,
+                StrokeColor = this.StrokeColor,
+                FillColor = this.FillColor,
+                StrokeThickness = this.StrokeThickness,
+                IsFilled = this.IsFilled
+            };
         }
     }
 }

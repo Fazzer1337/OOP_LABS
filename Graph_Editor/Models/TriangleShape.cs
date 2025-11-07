@@ -10,34 +10,30 @@ namespace GraphEditor.Models
         public Point Point2 { get; set; }
         public Point Point3 { get; set; }
 
-        public override void Draw(Canvas canvas)
+        public override void Draw(Canvas c)
         {
-            Polygon triangle = new Polygon
+            var polygon = new Polygon
             {
                 Stroke = new SolidColorBrush(StrokeColor),
                 StrokeThickness = StrokeThickness,
                 Fill = IsFilled ? new SolidColorBrush(FillColor) : null,
                 Points = new PointCollection { Position, Point2, Point3 }
             };
-            canvas.Children.Add(triangle);
+            c.Children.Add(polygon);
         }
 
         public override bool ContainsPoint(Point point)
         {
-            // Алгоритм: координаты Баррицентра
-            double x = point.X, y = point.Y;
-            double x1 = Position.X, y1 = Position.Y;
-            double x2 = Point2.X, y2 = Point2.Y;
-            double x3 = Point3.X, y3 = Point3.Y;
+            // Метод проверки принадлежности точки треугольнику (Алгоритм с барицентрическими координатами)
+            var p0 = Position;
+            var p1 = Point2;
+            var p2 = Point3;
 
-            double d1 = (x - x2) * (y1 - y2) - (y - y2) * (x1 - x2);
-            double d2 = (x - x3) * (y2 - y3) - (y - y3) * (x2 - x3);
-            double d3 = (x - x1) * (y3 - y1) - (y - y1) * (x3 - x1);
+            double area = 0.5 * (-p1.Y * p2.X + p0.Y * (-p1.X + p2.X) + p0.X * (p1.Y - p2.Y) + p1.X * p2.Y);
+            double s = 1 / (2 * area) * (p0.Y * p2.X - p0.X * p2.Y + (p2.Y - p0.Y) * point.X + (p0.X - p2.X) * point.Y);
+            double t = 1 / (2 * area) * (p0.X * p1.Y - p0.Y * p1.X + (p0.Y - p1.Y) * point.X + (p1.X - p0.X) * point.Y);
 
-            bool has_neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
-            bool has_pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
-
-            return !(has_neg && has_pos);
+            return s >= 0 && t >= 0 && (s + t) <= 1;
         }
 
         public override void MoveBy(double dx, double dy)
@@ -45,6 +41,20 @@ namespace GraphEditor.Models
             Position = new Point(Position.X + dx, Position.Y + dy);
             Point2 = new Point(Point2.X + dx, Point2.Y + dy);
             Point3 = new Point(Point3.X + dx, Point3.Y + dy);
+        }
+
+        public override ShapeBase Clone()
+        {
+            return new TriangleShape
+            {
+                Position = this.Position,
+                Point2 = this.Point2,
+                Point3 = this.Point3,
+                StrokeColor = this.StrokeColor,
+                FillColor = this.FillColor,
+                StrokeThickness = this.StrokeThickness,
+                IsFilled = this.IsFilled
+            };
         }
     }
 }

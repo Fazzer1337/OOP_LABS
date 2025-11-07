@@ -9,9 +9,9 @@ namespace GraphEditor.Models
     {
         public Point EndPoint { get; set; }
 
-        public override void Draw(Canvas canvas)
+        public override void Draw(Canvas c)
         {
-            Line line = new Line
+            var line = new Line
             {
                 X1 = Position.X,
                 Y1 = Position.Y,
@@ -20,31 +20,45 @@ namespace GraphEditor.Models
                 Stroke = new SolidColorBrush(StrokeColor),
                 StrokeThickness = StrokeThickness
             };
-            canvas.Children.Add(line);
+            c.Children.Add(line);
         }
 
         public override bool ContainsPoint(Point point)
         {
-            // Алгоритм: Расстояние от точки до отрезка
-            double x1 = Position.X, y1 = Position.Y;
-            double x2 = EndPoint.X, y2 = EndPoint.Y;
-            double px = point.X, py = point.Y;
-            double dx = x2 - x1, dy = y2 - y1;
-            double lengthSq = dx * dx + dy * dy;
-            if (lengthSq == 0)
-                return Math.Sqrt((px - x1) * (px - x1) + (py - y1) * (py - y1)) <= StrokeThickness + 2;
-            double t = ((px - x1) * dx + (py - y1) * dy) / lengthSq;
+            // Проверка, близка ли точка к линии (радиус 5 пикселей)
+            double distance = DistancePointToLine(point, Position, EndPoint);
+            return distance <= StrokeThickness + 5;
+        }
+
+        private double DistancePointToLine(Point p, Point a, Point b)
+        {
+            double dx = b.X - a.X;
+            double dy = b.Y - a.Y;
+            if (dx == 0 && dy == 0)
+                return (p - a).Length;
+
+            double t = ((p.X - a.X) * dx + (p.Y - a.Y) * dy) / (dx * dx + dy * dy);
             t = Math.Max(0, Math.Min(1, t));
-            double closestX = x1 + t * dx;
-            double closestY = y1 + t * dy;
-            double dist = Math.Sqrt((px - closestX) * (px - closestX) + (py - closestY) * (py - closestY));
-            return dist <= StrokeThickness + 4;
+            var projection = new Point(a.X + t * dx, a.Y + t * dy);
+            return (p - projection).Length;
         }
 
         public override void MoveBy(double dx, double dy)
         {
             Position = new Point(Position.X + dx, Position.Y + dy);
             EndPoint = new Point(EndPoint.X + dx, EndPoint.Y + dy);
+        }
+
+        public override ShapeBase Clone()
+        {
+            return new LineShape
+            {
+                Position = this.Position,
+                EndPoint = this.EndPoint,
+                StrokeColor = this.StrokeColor,
+                StrokeThickness = this.StrokeThickness,
+                IsFilled = this.IsFilled // обычно для линии false
+            };
         }
     }
 }

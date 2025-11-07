@@ -30,7 +30,6 @@ namespace GraphEditor
             Triangle,
             FreeDraw
         }
-
         private Tool currentTool = Tool.None;
         private Point startPoint;
         private ShapeBase? tempShape;
@@ -41,18 +40,28 @@ namespace GraphEditor
         private bool isDrawing = false;
         private double currentScale = 1.0;
 
+        private Stack<List<ShapeBase>> undoStack = new();
+        private Stack<List<ShapeBase>> redoStack = new();
+        private ShapeBase? clipboardShape = null;
+
         public MainWindow()
         {
             InitializeComponent();
         }
 
-        // Инструменты
-        private void LineToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Line);
-        private void RectToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Rectangle);
-        private void EllipseToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Ellipse);
-        private void TriangleToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Triangle);
-        private void CursorToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Cursor);
-        private void FreeDrawToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.FreeDraw);
+        private void SaveStateForUndo()
+        {
+            undoStack.Push(CloneShapeList(shapes));
+            redoStack.Clear();
+        }
+
+        private List<ShapeBase> CloneShapeList(List<ShapeBase> list)
+        {
+            var clones = new List<ShapeBase>();
+            foreach (var s in list)
+                clones.Add(s.Clone());
+            return clones;
+        }
 
         private void ChangeTool(Tool tool)
         {
@@ -60,13 +69,19 @@ namespace GraphEditor
             isFreeDrawing = (tool == Tool.FreeDraw);
             selectedShape = null;
             isMoving = false;
+            RedrawCanvas();
         }
 
-        // Палитра
+        private void LineToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Line);
+        private void RectToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Rectangle);
+        private void EllipseToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Ellipse);
+        private void TriangleToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Triangle);
+        private void CursorToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.Cursor);
+        private void FreeDrawToolBtn_Click(object sender, RoutedEventArgs e) => ChangeTool(Tool.FreeDraw);
+
         private void ColorPick_Click(object sender, RoutedEventArgs e)
         {
-            var btn = sender as Button;
-            if (btn?.Background is SolidColorBrush brush)
+            if (sender is Button btn && btn.Background is SolidColorBrush brush)
                 selectedColor = brush.Color;
         }
 
@@ -81,43 +96,103 @@ namespace GraphEditor
                     Background = new SolidColorBrush(selectedColor),
                     Width = 25,
                     Height = 25,
-                    Margin = new Thickness(2)
+                    Margin = new Thickness(2),
                 };
                 btn.Click += ColorPick_Click;
                 PalettePanel.Children.Add(btn);
             }
         }
 
-        // Панель выделения
         private void StrokeColorBtn_Click(object sender, RoutedEventArgs e)
         {
+            if (selectedShape == null) return;
             var dlg = new ColorPickerWindow();
-            if (dlg.ShowDialog() == true && selectedShape != null)
+            if (dlg.ShowDialog() == true)
             {
+                SaveStateForUndo();
                 selectedShape.StrokeColor = dlg.SelectedColor;
                 RedrawCanvas();
             }
         }
+
         private void FillColorBtn_Click(object sender, RoutedEventArgs e)
         {
+            if (selectedShape == null) return;
             var dlg = new ColorPickerWindow();
-            if (dlg.ShowDialog() == true && selectedShape != null)
+            if (dlg.ShowDialog() == true)
             {
+                SaveStateForUndo();
                 selectedShape.FillColor = dlg.SelectedColor;
                 selectedShape.IsFilled = true;
                 RedrawCanvas();
             }
         }
+
         private void FillCheckBox_Click(object sender, RoutedEventArgs e)
         {
             if (currentTool == Tool.Cursor && selectedShape != null)
             {
+                SaveStateForUndo();
                 selectedShape.IsFilled = FillCheckBox.IsChecked == true;
                 RedrawCanvas();
             }
         }
 
-        // Холст: мышь
+        private void Undo_Click(object sender, RoutedEventArgs e)
+        {
+            if (undoStack.Count == 0) return;
+            redoStack.Push(CloneShapeList(shapes));
+            shapes = undoStack.Pop();
+            selectedShape = null;
+            RedrawCanvas();
+        }
+
+        private void Redo_Click(object sender, RoutedEventArgs e)
+        {
+            if (redoStack.Count == 0) return;
+            undoStack.Push(CloneShapeList(shapes));
+            shapes = redoStack.Pop();
+            selectedShape = null;
+            RedrawCanvas();
+        }
+
+        private void Copy_Click(object sender, RoutedEventArgs e)
+        {
+            if (selectedShape != null)
+                clipboardShape = selectedShape.Clone();
+        }
+
+        private void Paste_Click(object sender, RoutedEventArgs e)
+        {
+            if (clipboardShape == null) return;
+            SaveStateForUndo();
+            var pasteShape = clipboardShape.Clone();
+            pasteShape.MoveBy(10, 10);
+            shapes.Add(pasteShape);
+            selectedShape = pasteShape;
+            RedrawCanvas();
+        }
+
+        private void DeleteSelectedShape()
+        {
+            if (selectedShape == null) return;
+            SaveStateForUndo();
+            shapes.Remove(selectedShape);
+            selectedShape = null;
+            RedrawCanvas();
+        }
+        private void Delete_Click(object sender, RoutedEventArgs e)
+        {
+            DeleteSelectedShape();
+        }
+
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            base.OnKeyDown(e);
+            if (e.Key == Key.Delete)
+                DeleteSelectedShape();
+        }
+
         private void DrawCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             var pos = e.GetPosition(DrawCanvas);
@@ -125,11 +200,14 @@ namespace GraphEditor
             {
                 selectedShape = null;
                 for (int i = shapes.Count - 1; i >= 0; i--)
+                {
                     if (shapes[i].ContainsPoint(pos))
                     {
                         selectedShape = shapes[i];
                         break;
                     }
+                }
+                RedrawCanvas();
                 if (selectedShape != null)
                 {
                     isMoving = true;
@@ -139,12 +217,13 @@ namespace GraphEditor
             }
             else
             {
+                SaveStateForUndo();
                 isDrawing = true;
                 startPoint = pos;
 
                 if (isFreeDrawing)
                 {
-                    currentStroke = new Polyline
+                    currentStroke = new Polyline()
                     {
                         Stroke = new SolidColorBrush(selectedColor),
                         StrokeThickness = 2,
@@ -159,7 +238,7 @@ namespace GraphEditor
                     switch (currentTool)
                     {
                         case Tool.Line:
-                            tempShape = new LineShape
+                            tempShape = new LineShape()
                             {
                                 Position = startPoint,
                                 EndPoint = startPoint,
@@ -168,7 +247,7 @@ namespace GraphEditor
                             };
                             break;
                         case Tool.Rectangle:
-                            tempShape = new RectangleShape
+                            tempShape = new RectangleShape()
                             {
                                 Position = startPoint,
                                 Width = 0,
@@ -180,7 +259,7 @@ namespace GraphEditor
                             };
                             break;
                         case Tool.Ellipse:
-                            tempShape = new EllipseShape
+                            tempShape = new EllipseShape()
                             {
                                 Position = startPoint,
                                 Width = 0,
@@ -192,7 +271,7 @@ namespace GraphEditor
                             };
                             break;
                         case Tool.Triangle:
-                            tempShape = new TriangleShape
+                            tempShape = new TriangleShape()
                             {
                                 Position = startPoint,
                                 Point2 = startPoint,
@@ -228,7 +307,9 @@ namespace GraphEditor
             else if (isDrawing)
             {
                 if (isFreeDrawing && e.LeftButton == MouseButtonState.Pressed && currentStroke != null)
+                {
                     currentStroke.Points.Add(pos);
+                }
                 else if (e.LeftButton == MouseButtonState.Pressed && tempShape != null)
                 {
                     if (tempShape is LineShape line)
@@ -267,7 +348,7 @@ namespace GraphEditor
                 isDrawing = false;
                 if (isFreeDrawing && currentStroke != null)
                 {
-                    var freeDraw = new FreeDrawShape
+                    var freeDraw = new FreeDrawShape()
                     {
                         Points = new List<Point>(currentStroke.Points),
                         StrokeColor = selectedColor,
@@ -288,7 +369,6 @@ namespace GraphEditor
             }
         }
 
-        // Сетка и масштаб
         private void GridMenuItem_Checked(object sender, RoutedEventArgs e)
         {
             DrawGrid();
@@ -312,28 +392,63 @@ namespace GraphEditor
             double height = GridCanvas.Height;
 
             for (double x = 0; x <= width; x += gridSize)
-                GridCanvas.Children.Add(new Line { Stroke = Brushes.LightGray, X1 = x, Y1 = 0, X2 = x, Y2 = height, StrokeThickness = 0.5 });
+                GridCanvas.Children.Add(new Line
+                {
+                    Stroke = Brushes.LightGray,
+                    X1 = x,
+                    Y1 = 0,
+                    X2 = x,
+                    Y2 = height,
+                    StrokeThickness = 0.5
+                });
 
             for (double y = 0; y <= height; y += gridSize)
-                GridCanvas.Children.Add(new Line { Stroke = Brushes.LightGray, X1 = 0, Y1 = y, X2 = width, Y2 = y, StrokeThickness = 0.5 });
+                GridCanvas.Children.Add(new Line
+                {
+                    Stroke = Brushes.LightGray,
+                    X1 = 0,
+                    Y1 = y,
+                    X2 = width,
+                    Y2 = y,
+                    StrokeThickness = 0.5
+                });
         }
 
+        private void ZoomIn_Click(object sender, RoutedEventArgs e)
+        {
+            currentScale += 0.1;
+            ApplyScale();
+        }
 
-        private void ZoomIn_Click(object sender, RoutedEventArgs e) { currentScale += 0.1; ApplyScale(); }
-        private void ZoomOut_Click(object sender, RoutedEventArgs e) { if (currentScale > 0.2) { currentScale -= 0.1; ApplyScale(); } }
-        private void ZoomReset_Click(object sender, RoutedEventArgs e) { currentScale = 1.0; ApplyScale(); }
+        private void ZoomOut_Click(object sender, RoutedEventArgs e)
+        {
+            if (currentScale > 0.2)
+            {
+                currentScale -= 0.1;
+                ApplyScale();
+            }
+        }
+
+        private void ZoomReset_Click(object sender, RoutedEventArgs e)
+        {
+            currentScale = 1.0;
+            ApplyScale();
+        }
+
         private void ApplyScale()
         {
             var st = new ScaleTransform(currentScale, currentScale);
             DrawCanvas.LayoutTransform = st;
             GridCanvas.LayoutTransform = st;
         }
+
         private void DarkTheme_Checked(object sender, RoutedEventArgs e)
         {
             this.Background = Brushes.DarkSlateGray;
             DrawCanvas.Background = Brushes.Black;
             GridCanvas.Background = Brushes.Black;
         }
+
         private void DarkTheme_Unchecked(object sender, RoutedEventArgs e)
         {
             this.Background = Brushes.White;
@@ -341,32 +456,40 @@ namespace GraphEditor
             GridCanvas.Background = Brushes.Transparent;
         }
 
-        // Сохранение и открытие
         private void SaveCanvasAsJpeg(string filePath)
         {
             double width = DrawCanvas.ActualWidth;
             double height = DrawCanvas.ActualHeight;
+
             var rtb = new RenderTargetBitmap((int)width, (int)height, 96d, 96d, PixelFormats.Pbgra32);
             DrawCanvas.Measure(new Size(width, height));
             DrawCanvas.Arrange(new Rect(new Size(width, height)));
             rtb.Render(DrawCanvas);
-            var encoder = new JpegBitmapEncoder();
+
+            JpegBitmapEncoder encoder = new JpegBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(rtb));
-            using (var fs = new FileStream(filePath, FileMode.Create)) { encoder.Save(fs); }
+
+            using var fs = new FileStream(filePath, FileMode.Create);
+            encoder.Save(fs);
         }
+
         private void NewProject_Click(object sender, RoutedEventArgs e)
         {
+            SaveStateForUndo();
             shapes.Clear();
-            DrawCanvas.Children.Clear();
+            selectedShape = null;
             tempShape = null;
+            DrawCanvas.Children.Clear();
             currentFilePath = null;
         }
+
         private void SaveProject(string filePath)
         {
             var options = new JsonSerializerOptions { WriteIndented = true, IncludeFields = true };
             var json = JsonSerializer.Serialize(shapes, options);
             File.WriteAllText(filePath, json);
         }
+
         private void SaveProject_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrEmpty(currentFilePath))
@@ -374,6 +497,7 @@ namespace GraphEditor
             else
                 SaveProject(currentFilePath!);
         }
+
         private void SaveAsProject_Click(object sender, RoutedEventArgs e)
         {
             var dlg = new SaveFileDialog { Filter = "Graph files|*.graph|JPEG image|*.jpeg" };
@@ -388,6 +512,7 @@ namespace GraphEditor
                 }
             }
         }
+
         private void OpenProject_Click(object sender, RoutedEventArgs e)
         {
             var dlg = new OpenFileDialog { Filter = "Graph files|*.graph" };
@@ -395,22 +520,12 @@ namespace GraphEditor
             {
                 var json = File.ReadAllText(dlg.FileName);
                 shapes = JsonSerializer.Deserialize<List<ShapeBase>>(json)!;
-                currentFilePath = dlg.FileName;
-                RedrawCanvas();
-            }
-        }
-        private void Exit_Click(object sender, RoutedEventArgs e) => Close();
-
-        protected override void OnKeyDown(KeyEventArgs e)
-        {
-            base.OnKeyDown(e);
-            if (e.Key == Key.Delete && selectedShape != null)
-            {
-                shapes.Remove(selectedShape);
                 selectedShape = null;
                 RedrawCanvas();
             }
         }
+
+        private void Exit_Click(object sender, RoutedEventArgs e) => Close();
 
         private void RedrawCanvas()
         {
@@ -481,16 +596,18 @@ namespace GraphEditor
         public class FreeDrawShape : ShapeBase
         {
             public List<Point> Points { get; set; } = new List<Point>();
-            public override void Draw(Canvas c)
+
+            public override void Draw(Canvas canvas)
             {
-                var pl = new Polyline
+                var polyline = new Polyline
                 {
                     Stroke = new SolidColorBrush(StrokeColor),
                     StrokeThickness = StrokeThickness,
                     Points = new PointCollection(Points)
                 };
-                c.Children.Add(pl);
+                canvas.Children.Add(polyline);
             }
+
             public override bool ContainsPoint(Point point)
             {
                 foreach (var p in Points)
@@ -501,12 +618,20 @@ namespace GraphEditor
                 }
                 return false;
             }
+
             public override void MoveBy(double dx, double dy)
             {
                 for (int i = 0; i < Points.Count; i++)
                 {
                     Points[i] = new Point(Points[i].X + dx, Points[i].Y + dy);
                 }
+            }
+
+            public override ShapeBase Clone()
+            {
+                var clone = (FreeDrawShape)this.MemberwiseClone();
+                clone.Points = new List<Point>(Points);
+                return clone;
             }
         }
     }

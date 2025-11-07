@@ -10,9 +10,9 @@ namespace GraphEditor.Models
         public double Width { get; set; }
         public double Height { get; set; }
 
-        public override void Draw(Canvas canvas)
+        public override void Draw(Canvas c)
         {
-            Rectangle rect = new Rectangle
+            var rect = new Rectangle
             {
                 Width = Width,
                 Height = Height,
@@ -22,18 +22,32 @@ namespace GraphEditor.Models
             };
             Canvas.SetLeft(rect, Position.X);
             Canvas.SetTop(rect, Position.Y);
-            canvas.Children.Add(rect);
+            c.Children.Add(rect);
         }
 
         public override bool ContainsPoint(Point point)
         {
-            return point.X >= Position.X && point.X <= Position.X + Width &&
-                   point.Y >= Position.Y && point.Y <= Position.Y + Height;
+            var rect = new Rect(Position.X, Position.Y, Width, Height);
+            return rect.Contains(point);
         }
 
         public override void MoveBy(double dx, double dy)
         {
             Position = new Point(Position.X + dx, Position.Y + dy);
+        }
+
+        public override ShapeBase Clone()
+        {
+            return new RectangleShape
+            {
+                Position = this.Position,
+                Width = this.Width,
+                Height = this.Height,
+                StrokeColor = this.StrokeColor,
+                FillColor = this.FillColor,
+                StrokeThickness = this.StrokeThickness,
+                IsFilled = this.IsFilled
+            };
         }
     }
 }

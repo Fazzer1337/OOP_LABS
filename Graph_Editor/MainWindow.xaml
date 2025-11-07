@@ -13,7 +13,14 @@
                 <Separator />
                 <MenuItem Header="Выход" Click="Exit_Click"/>
             </MenuItem>
-            <MenuItem Header="Правка"/>
+            <MenuItem Header="Правка">
+                <MenuItem Header="Отменить" Click="Undo_Click" />
+                <MenuItem Header="Повторить" Click="Redo_Click" />
+                <Separator/>
+                <MenuItem Header="Копировать" Click="Copy_Click" />
+                <MenuItem Header="Вставить" Click="Paste_Click" />
+                <MenuItem Header="Удалить" Click="Delete_Click" />
+            </MenuItem>
             <MenuItem Header="Вид">
                 <MenuItem x:Name="GridMenuItem" Header="Показать сетку" IsCheckable="True"
                     Checked="GridMenuItem_Checked" Unchecked="GridMenuItem_Unchecked"/>
@@ -45,23 +52,21 @@
             <Button Background="Black" Width="25" Height="25" Margin="2" Click="ColorPick_Click"/>
             <Button Content="+" Width="25" Height="25" Margin="2" Click="AddColor_Click"/>
         </StackPanel>
-        <!-- Область рисования: два Canvas в Grid внутри ScrollViewer -->
         <Grid DockPanel.Dock="Top">
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                 <Grid>
-                    <!-- Сначала DrawCanvas (ниже), затем GridCanvas (поверх) -->
-                    <Canvas Name="DrawCanvas" Background="White" Width="1500" Height="1000"
+                    <Canvas x:Name="DrawCanvas" Background="White" Width="1500" Height="1000"
                             MouseMove="DrawCanvas_MouseMove"
                             MouseLeftButtonDown="DrawCanvas_MouseLeftButtonDown"
                             MouseLeftButtonUp="DrawCanvas_MouseLeftButtonUp"/>
-                    <Canvas Name="GridCanvas" IsHitTestVisible="False" Visibility="Collapsed"
+                    <Canvas x:Name="GridCanvas" IsHitTestVisible="False" Visibility="Collapsed"
                             Width="1500" Height="1000"/>
                 </Grid>
             </ScrollViewer>
         </Grid>
         <StatusBar DockPanel.Dock="Bottom">
             <StatusBarItem>
-                <TextBlock Name="CursorPositionText" Text="Координаты курсора:"/>
+                <TextBlock x:Name="CursorPositionText" Text="Координаты курсора:"/>
             </StatusBarItem>
         </StatusBar>
     </DockPanel>
