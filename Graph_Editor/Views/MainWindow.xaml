@@ -1,0 +1,81 @@
+﻿<Window x:Class="GraphEditor.MainWindow"
+        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Графический редактор" Height="600" Width="900">
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="Файл">
+                <MenuItem Header="Новый" Click="NewProject_Click"/>
+                <MenuItem Header="Открыть" Click="OpenProject_Click"/>
+                <MenuItem Header="Сохранить" Click="SaveProject_Click"/>
+                <MenuItem Header="Сохранить как" Click="SaveAsProject_Click"/>
+                <Separator />
+                <MenuItem Header="Выход" Click="Exit_Click"/>
+            </MenuItem>
+            <MenuItem Header="Правка">
+                <MenuItem Header="Отменить" Click="Undo_Click" />
+                <MenuItem Header="Повторить" Click="Redo_Click" />
+                <Separator/>
+                <MenuItem Header="Копировать" Click="Copy_Click" />
+                <MenuItem Header="Вставить" Click="Paste_Click" />
+                <MenuItem Header="Удалить" Click="Delete_Click" />
+            </MenuItem>
+            <MenuItem Header="Вид">
+                <MenuItem x:Name="GridMenuItem" Header="Показать сетку" IsCheckable="True"
+                    Checked="GridMenuItem_Checked" Unchecked="GridMenuItem_Unchecked"/>
+                <Separator/>
+                <MenuItem Header="Масштаб + " Click="ZoomIn_Click"/>
+                <MenuItem Header="Масштаб - " Click="ZoomOut_Click"/>
+                <MenuItem Header="Сбросить масштаб" Click="ZoomReset_Click"/>
+                <Separator/>
+                <MenuItem Header="Темная тема" IsCheckable="True" Checked="DarkTheme_Checked" Unchecked="DarkTheme_Unchecked"/>
+            </MenuItem>
+            <MenuItem Header="Инструменты">
+                <MenuItem Header="Курсор" Click="CursorToolBtn_Click"/>
+                <MenuItem Header="Линия" Click="LineToolBtn_Click"/>
+                <MenuItem Header="Прямоугольник" Click="RectToolBtn_Click"/>
+                <MenuItem Header="Эллипс" Click="EllipseToolBtn_Click"/>
+                <MenuItem Header="Треугольник" Click="TriangleToolBtn_Click"/>
+                <MenuItem Header="Карандаш" Click="FreeDrawToolBtn_Click"/>
+                <MenuItem Header="Ластик" Click="EraserToolBtn_Click"/>
+                <MenuItem Header="Текст" Click="TextToolBtn_Click"/>
+                <MenuItem Header="Заливка" Click="FillToolBtn_Click"/>
+            </MenuItem>
+        </Menu>
+        <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Background="#eee" Margin="5">
+            <TextBlock Text="Цвет контура:" VerticalAlignment="Center" Margin="5"/>
+            <Button x:Name="StrokeColorBtn" Content="..." Width="25" Height="25" Margin="2" Click="StrokeColorBtn_Click"/>
+            <TextBlock Text="Цвет заливки:" VerticalAlignment="Center" Margin="5"/>
+            <Button x:Name="FillColorBtn" Content="..." Width="25" Height="25" Margin="2" Click="FillColorBtn_Click"/>
+            <CheckBox x:Name="FillCheckBox" Content="Заливка" VerticalAlignment="Center" Margin="10,0,0,0" Click="FillCheckBox_Click"/>
+            <TextBlock Text="Толщина кисти:" VerticalAlignment="Center" Margin="10,0,0,0"/>
+            <Slider x:Name="BrushSizeSlider" Minimum="1" Maximum="20" Value="2" Width="100" Margin="5,0" ValueChanged="BrushSizeSlider_ValueChanged"/>
+            <TextBlock Text="Поворот (°):" VerticalAlignment="Center" Margin="15,0,0,0"/>
+            <TextBox x:Name="RotateAngleBox" Width="40" Height="24" Margin="3,0" VerticalAlignment="Center" PreviewTextInput="RotateAngleBox_PreviewTextInput"/>
+            <Button Content="Применить" Width="75" Height="25" Margin="3,0" Click="ApplyRotateAngle_Click"/>
+        </StackPanel>
+        <StackPanel x:Name="PalettePanel" DockPanel.Dock="Top" Orientation="Horizontal" Margin="5" Background="LightGray">
+            <TextBlock Text="Выберите цвет:" VerticalAlignment="Center" Margin="5"/>
+            <Button Background="Black" Width="25" Height="25" Margin="2" Click="ColorPick_Click"/>
+            <Button Content="+" Width="25" Height="25" Margin="2" Click="AddColor_Click"/>
+        </StackPanel>
+        <Grid DockPanel.Dock="Top">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                <Grid>
+                    <Canvas x:Name="DrawCanvas" Background="White" Width="1500" Height="1000"
+                            MouseMove="DrawCanvas_MouseMove"
+                            MouseLeftButtonDown="DrawCanvas_MouseLeftButtonDown"
+                            MouseLeftButtonUp="DrawCanvas_MouseLeftButtonUp"/>
+                    <Canvas x:Name="GridCanvas" IsHitTestVisible="False" Visibility="Collapsed"
+                            Width="1500" Height="1000"/>
+                </Grid>
+            </ScrollViewer>
+        </Grid>
+        <StatusBar DockPanel.Dock="Bottom">
+            <StatusBarItem>
+                <TextBlock x:Name="CursorPositionText" Text="Координаты курсора:"/>
+            </StatusBarItem>
+        </StatusBar>
+    </DockPanel>
+</Window>
